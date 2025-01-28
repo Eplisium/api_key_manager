@@ -453,6 +453,9 @@
             sidebar.classList.toggle('collapsed');
             mainContent.classList.toggle('expanded');
             toggleButton.classList.toggle('rotated');
+            
+            // Save the state
+            localStorage.setItem('sidebarCollapsed', sidebar.classList.contains('collapsed'));
         }
 
         function setTheme(theme) {
@@ -471,8 +474,21 @@
             }
         }
 
+        // Initialize theme
         const savedTheme = localStorage.getItem('theme') || 'light';
         setTheme(savedTheme);
+
+        // Initialize sidebar state
+        const sidebarCollapsed = localStorage.getItem('sidebarCollapsed') === 'true';
+        if (sidebarCollapsed) {
+            const sidebar = document.getElementById('sidebar');
+            const mainContent = document.getElementById('main-content');
+            const toggleButton = document.getElementById('toggle-sidebar');
+            
+            sidebar.classList.add('collapsed');
+            mainContent.classList.add('expanded');
+            toggleButton.classList.add('rotated');
+        }
 
         document.getElementById('theme-toggle').addEventListener('click', () => {
             const currentTheme = document.documentElement.getAttribute('data-theme');

@@ -360,7 +360,7 @@ select.input-field option {
 .toggle-sidebar {
   position: absolute;
   right: -12px;
-  top: 20px;
+  top: 48px;
   transform: translateY(-50%);
   background: var(--card);
   border: 1px solid var(--border);
@@ -372,18 +372,22 @@ select.input-field option {
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: all 0.3s ease;
+  transition: all 0.3s ease, top 0.3s ease;
   z-index: 10;
   box-shadow: 2px 0 4px rgba(0, 0, 0, 0.1);
   color: var(--foreground);
 }
 
 .toggle-sidebar:hover {
-  background: var(--hover);
+  background-color: var(--hover);
 }
 
 .toggle-sidebar.rotated {
   transform: translateY(-50%) rotate(180deg);
+}
+
+.sidebar.collapsed .toggle-sidebar {
+  top: 12px;
 }
 
 .project-item {
