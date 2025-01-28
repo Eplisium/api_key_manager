@@ -192,6 +192,7 @@
         let isProjectEditMode = false;
         let draggedKey = null;
         let draggedKeyRect = null;
+        let draggedProject = null;
 
         async function fetchProjects() {
             try {
@@ -209,8 +210,12 @@
             container.innerHTML = projects.map(project => `
                 <div class="project-item ${selectedProject === project.id ? 'active' : ''}" 
                      data-project-id="${project.id}"
-                     ondragover="handleDragOver(event)"
-                     ondrop="handleDrop(event, ${project.id})"
+                     data-position="${project.position}"
+                     draggable="true"
+                     ondragstart="handleProjectDragStart(event, ${project.id})"
+                     ondragover="handleProjectDragOver(event)"
+                     ondrop="handleProjectDrop(event)"
+                     ondragend="handleProjectDragEnd(event)"
                      onclick="selectProject(${project.id})">
                     <div class="project-info">
                         <span class="project-name">${project.name}</span>
@@ -973,6 +978,63 @@
             } catch (error) {
                 console.error('Error exporting keys:', error);
                 alert('Failed to export keys. Please try again.');
+            }
+        }
+
+        function handleProjectDragStart(event, projectId) {
+            draggedProject = projectId;
+            event.dataTransfer.setData('text/plain', projectId);
+            event.currentTarget.classList.add('dragging');
+        }
+
+        function handleProjectDragOver(event) {
+            event.preventDefault();
+            const projectItem = event.currentTarget;
+            if (projectItem.classList.contains('project-item')) {
+                projectItem.classList.add('drag-over');
+            }
+        }
+
+        function handleProjectDragEnd(event) {
+            event.currentTarget.classList.remove('dragging');
+            document.querySelectorAll('.project-item').forEach(item => {
+                item.classList.remove('drag-over');
+            });
+        }
+
+        async function handleProjectDrop(event) {
+            event.preventDefault();
+            const projectItem = event.currentTarget;
+            projectItem.classList.remove('drag-over');
+            
+            if (!draggedProject) return;
+            
+            const targetProjectId = parseInt(projectItem.dataset.projectId);
+            const sourceProjectId = draggedProject;
+            
+            if (sourceProjectId === targetProjectId) return;
+            
+            try {
+                const targetPosition = parseInt(projectItem.dataset.position);
+                
+                const response = await fetch(`/projects/${sourceProjectId}/reorder`, {
+                    method: 'PATCH',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ new_position: targetPosition })
+                });
+                
+                if (!response.ok) {
+                    const error = await response.json();
+                    throw new Error(error.error || 'Failed to reorder project');
+                }
+                
+                // Refresh the projects list
+                await fetchProjects();
+            } catch (error) {
+                console.error('Error reordering project:', error);
+                alert(error.message);
+            } finally {
+                draggedProject = null;
             }
         }
     </script>

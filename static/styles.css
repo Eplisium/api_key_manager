@@ -421,15 +421,33 @@ select.input-field option {
 }
 
 .project-item {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 0.75rem;
-  border-radius: 0.375rem;
-  margin-bottom: 0.5rem;
   cursor: pointer;
-  transition: all 0.2s;
-  background: transparent;
+  padding: 8px;
+  margin: 4px 0;
+  border-radius: 6px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  transition: background-color 0.2s, transform 0.2s;
+  user-select: none;
+}
+
+.project-item.dragging {
+  opacity: 0.5;
+  transform: scale(0.95);
+}
+
+.project-item.drag-over {
+  border: 2px dashed var(--primary-color);
+  transform: scale(1.02);
+}
+
+.project-item:hover {
+  background-color: var(--hover-color);
+}
+
+.project-item.active {
+  background-color: var(--active-color);
 }
 
 .project-info {
@@ -443,32 +461,6 @@ select.input-field option {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-}
-
-.project-item:hover {
-  background-color: var(--hover);
-}
-
-.project-item.active {
-  background-color: var(--card);
-  color: var(--foreground);
-  border: 1px solid var(--border);
-}
-
-.project-item.active .btn-icon {
-  color: var(--muted);
-}
-
-.project-item.active .btn-icon:hover {
-  background-color: var(--hover);
-  color: var(--foreground);
-}
-
-.project-actions {
-  display: flex;
-  gap: 0.5rem;
-  opacity: 0;
-  transition: opacity 0.2s;
 }
 
 .project-item:hover .project-actions {

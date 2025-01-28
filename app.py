@@ -185,7 +185,7 @@ def update_key(key_id):
 @app.route('/projects', methods=['GET'])
 def get_projects():
     try:
-        projects = Project.query.all()
+        projects = Project.query.order_by(Project.position).all()
         return jsonify([project.to_dict() for project in projects])
     except Exception as e:
         logger.error(f"Error fetching projects: {str(e)}")
@@ -198,7 +198,13 @@ def create_project():
         if not data or 'name' not in data:
             return jsonify({'error': 'Project name required'}), 400
             
-        new_project = Project(name=data['name'])
+        # Get the maximum position
+        max_position = db.session.query(db.func.max(Project.position)).scalar() or -1
+            
+        new_project = Project(
+            name=data['name'],
+            position=max_position + 1
+        )
         db.session.add(new_project)
         db.session.commit()
         return jsonify(new_project.to_dict()), 201
@@ -537,6 +543,57 @@ def export_keys():
     except Exception as e:
         logger.error(f"Error exporting keys: {str(e)}")
         return jsonify({'error': f'Failed to export keys: {str(e)}'}), 500
+
+@app.route('/projects/<int:project_id>/reorder', methods=['PATCH'])
+def reorder_project(project_id):
+    try:
+        data = request.get_json()
+        if 'new_position' not in data:
+            return jsonify({'error': 'New position is required'}), 400
+
+        project = Project.query.get_or_404(project_id)
+        new_position = data['new_position']
+        old_position = project.position
+
+        logger.info(f"Reordering project {project.name} from position {old_position} to {new_position}")
+
+        with db.session.begin_nested():  # Create a savepoint
+            if new_position >= 0:
+                if new_position > old_position:
+                    # Moving forward: update positions of projects between old and new position
+                    affected = Project.query.filter(
+                        Project.position <= new_position,
+                        Project.position > old_position,
+                        Project.id != project_id
+                    ).update({Project.position: Project.position - 1})
+                    logger.info(f"Updated {affected} projects moving forward")
+                else:
+                    # Moving backward: update positions of projects between new and old position
+                    affected = Project.query.filter(
+                        Project.position >= new_position,
+                        Project.position < old_position,
+                        Project.id != project_id
+                    ).update({Project.position: Project.position + 1})
+                    logger.info(f"Updated {affected} projects moving backward")
+
+            project.position = new_position
+            db.session.flush()  # Ensure all position updates are applied
+
+            # Normalize positions
+            projects = Project.query.order_by(Project.position).all()
+            for i, p in enumerate(projects):
+                if p.position != i:
+                    p.position = i
+                    logger.info(f"Fixed position for project {p.name}: {p.position} -> {i}")
+
+        db.session.commit()
+        logger.info(f"Successfully reordered project {project.name} to position {new_position}")
+        return jsonify(project.to_dict()), 200
+    except Exception as e:
+        db.session.rollback()
+        logger.error(f"Error reordering project: {str(e)}")
+        logger.exception("Full traceback:")
+        return jsonify({'error': f'Failed to reorder project: {str(e)}'}), 500
 
 if __name__ == '__main__':
     app.run(host='localhost', port=5000, debug=True)# Main application file 

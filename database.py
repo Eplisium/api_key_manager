@@ -5,6 +5,7 @@ db = SQLAlchemy()
 class Project(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(100), nullable=False, unique=True)
+    position = db.Column(db.Integer, nullable=False, default=0)
     created_at = db.Column(db.DateTime, server_default=db.func.now())
     updated_at = db.Column(db.DateTime, server_default=db.func.now(), onupdate=db.func.now())
 
@@ -12,6 +13,7 @@ class Project(db.Model):
         return {
             'id': self.id,
             'name': self.name,
+            'position': self.position,
             'created_at': self.created_at.isoformat(),
             'updated_at': self.updated_at.isoformat()
         }
