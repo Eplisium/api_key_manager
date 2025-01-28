@@ -24,6 +24,7 @@ class APIKey(db.Model):
     used_with = db.Column(db.String(200))
     project_id = db.Column(db.Integer, db.ForeignKey('project.id'), nullable=True)
     project = db.relationship('Project', backref='keys')
+    position = db.Column(db.Integer, nullable=False, default=0)
     created_at = db.Column(db.DateTime, server_default=db.func.now())
     updated_at = db.Column(db.DateTime, server_default=db.func.now(), onupdate=db.func.now())
 
@@ -39,6 +40,7 @@ class APIKey(db.Model):
             'description': self.description,
             'used_with': self.used_with,
             'project': self.project.to_dict() if self.project else None,
+            'position': self.position,
             'created_at': self.created_at.isoformat(),
             'updated_at': self.updated_at.isoformat()
         }# Database configuration and functions 

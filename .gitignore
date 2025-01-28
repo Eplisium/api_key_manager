@@ -38,3 +38,4 @@ api_key_manager.log
 
 # Keep
 !logging.conf 
+migrations/versions/91494f74a62f_initial_migration.py

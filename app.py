@@ -1,6 +1,7 @@
 import logging
 import logging.config
 from flask import Flask, render_template, request, jsonify, redirect, url_for
+from flask_migrate import Migrate
 from database import db, APIKey, Project
 from datetime import datetime
 
@@ -13,6 +14,7 @@ app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.secret_key = 'your-secret-key-here'
 
 db.init_app(app)
+migrate = Migrate(app, db)
 
 @app.route('/')
 def index():
@@ -30,11 +32,29 @@ def get_key(key_id):
 @app.route('/keys', methods=['GET'])
 def get_keys():
     try:
-        keys = APIKey.query.all()
-        return jsonify([key.to_dict() for key in keys])
+        logger.info("Fetching all keys from database...")
+        # Get project_id from query params if it exists
+        project_id = request.args.get('project_id', type=int)
+        
+        # Build query
+        query = APIKey.query
+        if project_id is not None:
+            query = query.filter_by(project_id=project_id)
+        elif project_id is None and request.args.get('show_all') != 'true':
+            # If no project specified and not showing all, show only unassigned keys
+            query = query.filter_by(project_id=None)
+            
+        # Order by position within each project
+        keys = query.order_by(APIKey.project_id, APIKey.position).all()
+        
+        logger.info(f"Found {len(keys)} keys")
+        result = [key.to_dict() for key in keys]
+        logger.info("Successfully serialized keys to JSON")
+        return jsonify(result)
     except Exception as e:
         logger.error(f"Error fetching keys: {str(e)}")
-        return jsonify({'error': 'Failed to fetch keys'}), 500
+        logger.exception("Full traceback:")
+        return jsonify({'error': f'Failed to fetch keys: {str(e)}'}), 500
 
 def generate_unique_name(base_name, project_id=None):
     """Generate a unique name by adding a numeric suffix if needed."""
@@ -56,13 +76,19 @@ def add_key():
         
         project_id = data.get('project_id')
         unique_name = generate_unique_name(data['name'], project_id)
+        
+        # Get the maximum position for the project
+        max_position = db.session.query(db.func.max(APIKey.position)).filter(
+            APIKey.project_id == project_id
+        ).scalar() or -1
             
         new_key = APIKey(
             name=unique_name,
             key=data['key'],
             description=data.get('description'),
             used_with=data.get('used_with'),
-            project_id=project_id
+            project_id=project_id,
+            position=max_position + 1
         )
         
         db.session.add(new_key)
@@ -186,11 +212,107 @@ def update_project(project_id):
         logger.error(f"Error updating project: {str(e)}")
         return jsonify({'error': 'Failed to update project'}), 500
 
-@app.cli.command("init-db")
-def init_db():
-    with app.app_context():
-        db.create_all()
-    print("Database initialized")
+@app.route('/keys/<int:key_id>/reorder', methods=['PATCH'])
+def reorder_key(key_id):
+    try:
+        data = request.get_json()
+        if 'new_position' not in data:
+            return jsonify({'error': 'New position is required'}), 400
+
+        key = APIKey.query.get_or_404(key_id)
+        new_position = data['new_position']
+        old_position = key.position
+        target_project_id = data.get('project_id', key.project_id)  # Default to current project if not specified
+
+        logger.info(f"Reordering key {key.name} from position {old_position} to {new_position}")
+        logger.info(f"Project change: {key.project_id} -> {target_project_id}")
+
+        with db.session.begin_nested():  # Create a savepoint
+            if target_project_id == key.project_id and new_position >= 0:
+                # Moving within the same project
+                if new_position > old_position:
+                    # Moving forward: update positions of keys between old and new position
+                    affected = APIKey.query.filter(
+                        APIKey.project_id == target_project_id,
+                        APIKey.position <= new_position,
+                        APIKey.position > old_position,
+                        APIKey.id != key_id
+                    ).update({APIKey.position: APIKey.position - 1})
+                    logger.info(f"Updated {affected} keys moving forward")
+                else:
+                    # Moving backward: update positions of keys between new and old position
+                    affected = APIKey.query.filter(
+                        APIKey.project_id == target_project_id,
+                        APIKey.position >= new_position,
+                        APIKey.position < old_position,
+                        APIKey.id != key_id
+                    ).update({APIKey.position: APIKey.position + 1})
+                    logger.info(f"Updated {affected} keys moving backward")
+            else:
+                # Moving to a different project or to the end of current project
+                # Close the gap in the old project if changing projects
+                if target_project_id != key.project_id:
+                    affected_old = APIKey.query.filter(
+                        APIKey.project_id == key.project_id,
+                        APIKey.position > old_position
+                    ).update({APIKey.position: APIKey.position - 1})
+                    logger.info(f"Updated {affected_old} keys in old project")
+
+                # Get max position in target project
+                max_position = db.session.query(db.func.max(APIKey.position)).filter(
+                    APIKey.project_id == target_project_id
+                ).scalar() or -1
+                
+                # Set new position to end of target project
+                new_position = max_position + 1
+                key.project_id = target_project_id
+
+            key.position = new_position
+            db.session.flush()  # Ensure all position updates are applied
+
+            # Normalize positions within the affected projects
+            for project_id in {key.project_id, target_project_id}:
+                if project_id is not None:
+                    keys = APIKey.query.filter_by(project_id=project_id).order_by(APIKey.position).all()
+                    for i, k in enumerate(keys):
+                        if k.position != i:
+                            k.position = i
+                            logger.info(f"Fixed position for key {k.name}: {k.position} -> {i}")
+
+        db.session.commit()
+        logger.info(f"Successfully reordered key {key.name} to position {new_position}")
+        return jsonify(key.to_dict()), 200
+    except Exception as e:
+        db.session.rollback()
+        logger.error(f"Error reordering key: {str(e)}")
+        logger.exception("Full traceback:")
+        return jsonify({'error': f'Failed to reorder key: {str(e)}'}), 500
+
+@app.cli.command("check-db")
+def check_db():
+    """Check database tables and schema."""
+    try:
+        with app.app_context():
+            # Check if tables exist
+            inspector = db.inspect(db.engine)
+            tables = inspector.get_table_names()
+            print(f"Found tables: {tables}")
+            
+            # Check APIKey table structure
+            if 'api_key' in tables:
+                columns = inspector.get_columns('api_key')
+                print("\nAPIKey table structure:")
+                for col in columns:
+                    print(f"Column: {col['name']} ({col['type']})")
+            
+            # Count records
+            keys_count = APIKey.query.count()
+            projects_count = Project.query.count()
+            print(f"\nFound {keys_count} keys and {projects_count} projects")
+            
+    except Exception as e:
+        print(f"Error checking database: {str(e)}")
+        raise
 
 if __name__ == '__main__':
     app.run(host='localhost', port=5000, debug=True)# Main application file 

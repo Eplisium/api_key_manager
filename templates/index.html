@@ -101,6 +101,8 @@
         let isEditMode = false;
         let selectedProject = null;
         let isProjectEditMode = false;
+        let draggedKey = null;
+        let draggedKeyRect = null;
 
         async function fetchProjects() {
             try {
@@ -118,7 +120,7 @@
             container.innerHTML = projects.map(project => `
                 <div class="project-item ${selectedProject === project.id ? 'active' : ''}" 
                      data-project-id="${project.id}"
-                     ondragover="allowDrop(event)"
+                     ondragover="handleDragOver(event)"
                      ondrop="handleDrop(event, ${project.id})"
                      onclick="selectProject(${project.id})">
                     <div class="project-info">
@@ -145,22 +147,46 @@
 
         async function fetchKeys() {
             try {
-                const response = await fetch('/keys');
+                console.log('Fetching keys...');
+                let url = '/keys';
+                if (selectedProject !== null) {
+                    url += `?project_id=${selectedProject}`;
+                } else {
+                    url += '?show_all=true';
+                }
+                const response = await fetch(url);
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.error || 'Failed to fetch keys');
+                }
                 const keys = await response.json();
-                const filteredKeys = selectedProject 
-                    ? keys.filter(key => key.project && key.project.id === selectedProject)
-                    : keys;
-                renderKeys(filteredKeys);
-                addDragToKeys();
+                console.log('Received keys:', keys);
+                if (!Array.isArray(keys)) {
+                    console.error('Expected array of keys but got:', typeof keys, keys);
+                    throw new Error('Invalid response format');
+                }
+                console.log('Filtered keys:', keys);
+                renderKeys(keys);
             } catch (error) {
                 console.error('Error fetching keys:', error);
+                const container = document.getElementById('keys-container');
+                container.innerHTML = 
+                    '<div class="error-message">' +
+                    'Failed to load keys. Please try refreshing the page.<br>' +
+                    'Error: ' + error.message +
+                    '</div>';
             }
         }
 
         function renderKeys(keys) {
+            console.log('Rendering keys:', keys);
             const container = document.getElementById('keys-container');
             container.innerHTML = keys.map(key => `
-                <div class="key-card" data-key-id="${key.id}" draggable="true" ondragstart="handleDragStart(event, ${key.id})">
+                <div class="key-card" 
+                     data-key-id="${key.id}" 
+                     draggable="true" 
+                     ondragstart="handleDragStart(event, ${key.id})"
+                     ondragend="handleDragEnd(event)">
                     <div class="flex justify-between items-start mb-4">
                         <div>
                             <h3 class="font-semibold">${key.name}</h3>
@@ -185,10 +211,14 @@
                     <div class="text-sm text-gray-500">Used with: ${key.used_with || 'N/A'}</div>
                 </div>
             `).join('');
+            
+            container.ondragover = handleDragOver;
+            container.ondrop = handleDrop;
         }
 
         function showAllKeys() {
             selectedProject = null;
+            localStorage.removeItem('selectedProject');
             document.querySelectorAll('.project-item').forEach(item => {
                 item.classList.remove('active');
             });
@@ -307,44 +337,127 @@
         }
 
         function handleDragStart(event, keyId) {
+            draggedKey = keyId;
+            const keyCard = event.target;
+            draggedKeyRect = keyCard.getBoundingClientRect();
+            keyCard.classList.add('dragging');
+            event.dataTransfer.effectAllowed = 'move';
             event.dataTransfer.setData('text/plain', keyId);
         }
 
-        function allowDrop(event) {
-            event.preventDefault();
-            event.currentTarget.classList.add('drag-over');
+        function handleDragEnd(event) {
+            event.target.classList.remove('dragging');
+            draggedKey = null;
+            draggedKeyRect = null;
         }
 
-        function handleDrop(event, projectId) {
+        function handleDragOver(event) {
+            event.preventDefault();
+            event.dataTransfer.dropEffect = 'move';
+            
+            // If we're dragging over a project item, just return
+            if (event.currentTarget.classList.contains('project-item')) {
+                event.currentTarget.classList.add('drag-over');
+                return;
+            }
+            
+            const container = document.getElementById('keys-container');
+            const cards = Array.from(container.getElementsByClassName('key-card'));
+            const draggedElement = document.querySelector('.dragging');
+            
+            if (!draggedElement) return;
+            
+            // Only allow reordering within the same project view
+            if (selectedProject !== null) {
+                const closestCard = findClosestCard(event.clientY, cards.filter(card => !card.classList.contains('dragging')));
+                
+                if (closestCard) {
+                    const rect = closestCard.getBoundingClientRect();
+                    const threshold = rect.top + rect.height / 2;
+                    
+                    if (event.clientY < threshold) {
+                        container.insertBefore(draggedElement, closestCard);
+                    } else {
+                        container.insertBefore(draggedElement, closestCard.nextSibling);
+                    }
+                }
+            }
+        }
+
+        function findClosestCard(mouseY, cards) {
+            return cards.reduce((closest, card) => {
+                const rect = card.getBoundingClientRect();
+                const offset = mouseY - rect.top - rect.height / 2;
+                
+                if (closest === null || Math.abs(offset) < Math.abs(closest.offset)) {
+                    return { element: card, offset: offset };
+                } else {
+                    return closest;
+                }
+            }, null)?.element;
+        }
+
+        async function handleDrop(event, projectId = null) {
             event.preventDefault();
             event.currentTarget.classList.remove('drag-over');
-            const keyId = event.dataTransfer.getData('text/plain');
             
-            updateKeyProject(keyId, projectId);
-        }
-
-        async function updateKeyProject(keyId, projectId) {
+            const keyId = parseInt(event.dataTransfer.getData('text/plain'));
+            const container = document.getElementById('keys-container');
+            const cards = Array.from(container.getElementsByClassName('key-card'));
+            const droppedCard = document.querySelector(`[data-key-id="${keyId}"]`);
+            
             try {
-                const response = await fetch(`/keys/${keyId}/project`, {
+                let newPosition = 0;
+                
+                // If dropping on a project item
+                if (projectId !== null) {
+                    // Move to end of target project
+                    newPosition = -1;  // Special value to indicate "move to end"
+                } else {
+                    // Reordering within current view
+                    if (!droppedCard || !selectedProject) return;
+                    newPosition = cards.indexOf(droppedCard);
+                    projectId = selectedProject;
+                }
+                
+                const response = await fetch(`/keys/${keyId}/reorder`, {
                     method: 'PATCH',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ project_id: projectId })
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        new_position: newPosition,
+                        project_id: projectId
+                    })
                 });
-
+                
                 if (!response.ok) {
                     const error = await response.json();
-                    throw new Error(error.error || 'Failed to update key project');
+                    throw new Error(error.error || 'Failed to reorder key');
                 }
-
-                fetchKeys();
+                
+                // If we moved to a different project, switch to that project view
+                if (projectId !== selectedProject) {
+                    selectProject(projectId);  // This will handle localStorage and UI updates
+                }
+                
+                // Refresh the keys to ensure correct order
+                await fetchKeys();
             } catch (error) {
-                console.error('Error updating key project:', error);
-                alert(error.message);
+                console.error('Error reordering key:', error);
+                // Revert the UI to the original state
+                await fetchKeys();
             }
         }
 
         function selectProject(projectId) {
             selectedProject = projectId;
+            // Store the selected project in localStorage
+            if (projectId === null) {
+                localStorage.removeItem('selectedProject');
+            } else {
+                localStorage.setItem('selectedProject', projectId);
+            }
             document.querySelectorAll('.project-item').forEach(item => {
                 item.classList.toggle('active', item.dataset.projectId == projectId);
             });
@@ -496,8 +609,21 @@
         });
 
         // Initialize
-        fetchProjects();
-        fetchKeys();
+        document.addEventListener('DOMContentLoaded', async () => {
+            console.log('Page loaded, initializing...');
+            await fetchProjects();
+            
+            // Restore selected project from localStorage
+            const savedProject = localStorage.getItem('selectedProject');
+            if (savedProject) {
+                selectedProject = parseInt(savedProject);
+                document.querySelectorAll('.project-item').forEach(item => {
+                    item.classList.toggle('active', item.dataset.projectId == selectedProject);
+                });
+            }
+            
+            await fetchKeys();
+        });
     </script>
 </body>
 </html>

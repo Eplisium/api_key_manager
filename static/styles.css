@@ -104,8 +104,9 @@ body {
   border-radius: 0.5rem;
   padding: 1.5rem;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
-  transition: transform 0.2s;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
   border: 1px solid var(--border);
+  cursor: grab;
 }
 
 [data-theme="dark"] .key-card {
@@ -114,6 +115,20 @@ body {
 
 .key-card:hover {
   transform: translateY(-2px);
+}
+
+.key-card:active {
+  cursor: grabbing;
+}
+
+.key-card.dragging {
+  opacity: 0.8;
+  transform: scale(1.02);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.key-card.drag-over {
+  border: 2px dashed var(--primary);
 }
 
 .modal {
@@ -496,4 +511,25 @@ select.input-field option {
 
 .text-gray-600 {
   color: var(--muted);
+}
+
+/* Drag and Drop Styles */
+#keys-container {
+  min-height: 100px;
+  padding: 1rem;
+  transition: background-color 0.2s ease;
+}
+
+#keys-container.drag-over {
+  background-color: var(--hover);
+}
+
+.error-message {
+  background-color: hsl(0, 84.2%, 95%);
+  border: 1px solid hsl(0, 84.2%, 60.2%);
+  color: hsl(0, 84.2%, 40%);
+  padding: 1rem;
+  border-radius: 0.375rem;
+  text-align: center;
+  margin: 1rem;
 }
