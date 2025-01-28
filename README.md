@@ -14,8 +14,8 @@ A Flask-based web application for managing API keys and organizing them by proje
 
 1. Clone the repository:
 ```bash
-git clone <your-repo-url>
-cd api-key-manager
+git clone https://github.com/Eplisium/API-Storage.git
+cd API-Storage
 ```
 
 2. Create and activate a virtual environment:
