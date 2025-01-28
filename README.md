@@ -24,12 +24,56 @@ A Flask-based web application for managing and organizing API keys with a modern
   - Collapsible sidebar for better space utilization
   - Drag-and-drop interface for easy organization
   - Real-time updates
+  - Theme persistence across sessions
+  - One-click copy to clipboard for API keys
+  - Collapsible sidebar with state persistence
+  - Interactive notifications for bulk actions
+  - Drag-and-drop reordering within projects
+  - Drag-and-drop between projects for key organization
+  - Modern toast notifications for actions
+  - Responsive grid layout for key cards
 
 - **Security & Logging**
   - Comprehensive logging system
   - Secure storage of API keys
   - Error handling and validation
   - Database backup support
+  - Detailed error logging to api_key_manager.log
+  - Automatic database transaction rollback on errors
+  - Input validation for all API endpoints
+  - File encoding validation (UTF-8)
+  - Secure file upload handling
+  - Automatic key name conflict resolution
+  - Database migration error handling
+  - Comprehensive error messages for debugging
+
+- **Import/Export Capabilities**
+  - Import API keys from multiple file formats:
+    - .env files
+    - JSON files
+    - YAML files
+    - Properties files (.properties)
+    - Configuration files (.conf, .config)
+  - Export API keys to:
+    - .env format
+    - JSON format
+    - YAML format
+  - Bulk import configuration with post-import customization
+  - Support for various .env file formats including:
+    - KEY=value
+    - KEY = value
+    - KEY: value
+    - export KEY=value
+    - KEY='value'
+    - KEY="value"
+    - Comments support (# or ; prefixed lines)
+
+- **Bulk Operations**
+  - Set descriptions for multiple keys at once
+  - Apply "Used with" information to multiple keys simultaneously
+  - Clear descriptions for multiple keys
+  - Delete all keys in a project
+  - Batch update key configurations after import
 
 ## Prerequisites
 
