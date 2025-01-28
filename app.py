@@ -458,6 +458,48 @@ def import_env_file(project_id):
         logger.error(f"Error importing file: {str(e)}")
         return jsonify({'error': f'Failed to import file: {str(e)}'}), 500
 
+@app.route('/projects/<int:project_id>/import-os-env', methods=['POST'])
+def import_os_env(project_id):
+    try:
+        # Get all environment variables
+        env_vars = os.environ
+        imported_keys = []
+        
+        # Import each environment variable as a key
+        for key_name, key_value in env_vars.items():
+            # Generate unique name if key already exists
+            unique_name = generate_unique_name(key_name, project_id)
+            
+            # Get the maximum position for the project
+            max_position = db.session.query(db.func.max(APIKey.position)).filter(
+                APIKey.project_id == project_id
+            ).scalar() or -1
+            
+            # Create new API key entry
+            new_key = APIKey(
+                name=unique_name,
+                key=str(key_value),  # Convert to string in case of numeric values
+                description="Imported from OS environment variables",
+                project_id=project_id,
+                position=max_position + 1
+            )
+            
+            db.session.add(new_key)
+            imported_keys.append(new_key)
+        
+        db.session.commit()
+        logger.info(f"Successfully imported {len(imported_keys)} keys from OS environment variables")
+        
+        return jsonify({
+            'message': f'Successfully imported {len(imported_keys)} keys',
+            'keys': [key.to_dict() for key in imported_keys]
+        }), 201
+        
+    except Exception as e:
+        db.session.rollback()
+        logger.error(f"Error importing OS environment variables: {str(e)}")
+        return jsonify({'error': f'Failed to import OS environment variables: {str(e)}'}), 500
+
 def flatten_json(data, parent_key='', sep='_'):
     """Flatten nested JSON structure into key-value pairs."""
     items = {}

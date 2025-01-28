@@ -42,10 +42,16 @@
             <h1 class="title">API Key Manager</h1>
             <div class="header-actions">
                 <input type="file" id="env-file-input" accept=".env,.json,.yaml,.yml,.properties,.conf,.config" style="display: none" onchange="handleEnvFileUpload(event)">
-                <button id="import-env-btn" class="btn btn-secondary" onclick="document.getElementById('env-file-input').click()" style="display: none; margin-right: 8px;">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
-                    Import
-                </button>
+                <div class="dropdown" style="margin-right: 8px;">
+                    <button id="import-env-btn" class="btn btn-secondary" onclick="toggleImportDropdown()" style="display: none;">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                        Import
+                    </button>
+                    <div class="dropdown-content" id="import-dropdown">
+                        <a href="#" onclick="document.getElementById('env-file-input').click()">From File</a>
+                        <a href="#" onclick="importFromOS()">From OS</a>
+                    </div>
+                </div>
                 <div class="dropdown" style="margin-right: 8px;">
                     <button class="btn btn-secondary" onclick="toggleExportDropdown()">
                         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
@@ -167,6 +173,15 @@
                     <div class="keys-header">
                         <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0 3 3L22 7l-3-3m-3.5 3.5L19 4"/></svg>
                         <span class="font-semibold">Imported Keys</span>
+                        <div class="selection-controls">
+                            <button class="btn btn-secondary btn-sm" onclick="toggleAllKeys()">
+                                <span id="select-all-text">Select All</span>
+                            </button>
+                            <button class="btn btn-secondary btn-sm destructive" onclick="removeUnselectedKeys()">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/></svg>
+                                Remove Unselected
+                            </button>
+                        </div>
                     </div>
                     <div class="imported-keys-list" id="imported-keys-list">
                         <!-- Keys will be populated here -->
@@ -770,6 +785,9 @@
             
             container.innerHTML = keys.map((key, index) => `
                 <div class="imported-key-item" data-key-id="${key.id}">
+                    <div class="key-select">
+                        <input type="checkbox" class="key-checkbox" checked>
+                    </div>
                     <div class="key-number">${index + 1}</div>
                     <div class="key-content">
                         <div class="key-header">
@@ -872,14 +890,63 @@
             setTimeout(() => notification.remove(), 2000);
         }
 
+        let allKeysSelected = true;
+        
+        function toggleAllKeys() {
+            allKeysSelected = !allKeysSelected;
+            const checkboxes = document.querySelectorAll('.key-checkbox');
+            checkboxes.forEach(checkbox => {
+                checkbox.checked = allKeysSelected;
+            });
+            document.getElementById('select-all-text').textContent = allKeysSelected ? 'Deselect All' : 'Select All';
+        }
+
+        async function removeUnselectedKeys() {
+            const keyItems = document.querySelectorAll('.imported-key-item');
+            const deletions = [];
+            
+            keyItems.forEach(item => {
+                const checkbox = item.querySelector('.key-checkbox');
+                if (!checkbox.checked) {
+                    const keyId = item.dataset.keyId;
+                    deletions.push(
+                        fetch(`/keys/${keyId}`, { method: 'DELETE' })
+                            .then(() => item.remove())
+                    );
+                }
+            });
+
+            try {
+                await Promise.all(deletions);
+                
+                // Update the import count
+                const remainingKeys = document.querySelectorAll('.imported-key-item').length;
+                document.getElementById('import-count').textContent = 
+                    `${remainingKeys} key${remainingKeys !== 1 ? 's' : ''} imported`;
+                
+                // Show feedback
+                const notification = document.createElement('div');
+                notification.className = 'bulk-notification';
+                notification.textContent = `Removed ${deletions.length} key${deletions.length !== 1 ? 's' : ''}`;
+                document.querySelector('.bulk-content').appendChild(notification);
+                setTimeout(() => notification.remove(), 2000);
+            } catch (error) {
+                console.error('Error removing keys:', error);
+                alert('Some keys failed to be removed. Please try again.');
+            }
+        }
+
         async function saveImportedKeysConfig() {
             const updates = [];
             document.querySelectorAll('.imported-key-item').forEach(item => {
-                const keyId = item.dataset.keyId;
-                const description = item.querySelector('.description-field').value;
-                const usedWith = item.querySelector('.used-with-field').value;
-                
-                updates.push(updateKey(keyId, { description, used_with: usedWith }));
+                const checkbox = item.querySelector('.key-checkbox');
+                if (checkbox.checked) {  // Only update selected keys
+                    const keyId = item.dataset.keyId;
+                    const description = item.querySelector('.description-field').value;
+                    const usedWith = item.querySelector('.used-with-field').value;
+                    
+                    updates.push(updateKey(keyId, { description, used_with: usedWith }));
+                }
             });
 
             try {
@@ -949,7 +1016,11 @@
             document.getElementById("export-dropdown").classList.toggle("show");
         }
 
-        // Close the dropdown if the user clicks outside of it
+        function toggleImportDropdown() {
+            document.getElementById("import-dropdown").classList.toggle("show");
+        }
+
+        // Close dropdowns when clicking outside
         window.onclick = function(event) {
             if (!event.target.matches('.btn-secondary')) {
                 var dropdowns = document.getElementsByClassName("dropdown-content");
@@ -960,6 +1031,27 @@
                     }
                 }
             }
+        }
+
+        async function importFromOS() {
+            try {
+                const response = await fetch(`/projects/${selectedProject}/import-os-env`, {
+                    method: 'POST'
+                });
+
+                const result = await response.json();
+                if (response.ok) {
+                    showPostImportModal(result.keys);
+                } else {
+                    alert(result.error || 'Failed to import OS environment variables');
+                }
+            } catch (error) {
+                console.error('Error importing OS environment variables:', error);
+                alert('Failed to import OS environment variables');
+            }
+
+            // Close the dropdown
+            document.getElementById("import-dropdown").classList.remove("show");
         }
 
         async function exportKeys(format) {

@@ -438,16 +438,17 @@ select.input-field option {
 }
 
 .project-item.drag-over {
-  border: 2px dashed var(--primary-color);
+  border: 2px dashed var(--primary);
   transform: scale(1.02);
 }
 
 .project-item:hover {
-  background-color: var(--hover-color);
+  background-color: var(--hover);
 }
 
 .project-item.active {
-  background-color: var(--active-color);
+  background-color: var(--hover);
+  border: 1px solid var(--border);
 }
 
 .project-info {
@@ -650,8 +651,8 @@ select.input-field option {
   max-height: 85vh;
   display: flex;
   flex-direction: column;
-  gap: 1.5rem;
   padding: 1.5rem;
+  overflow: hidden;
 }
 
 .import-header {
@@ -660,6 +661,7 @@ select.input-field option {
   align-items: center;
   padding-bottom: 1rem;
   border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
 }
 
 .import-title {
@@ -683,6 +685,8 @@ select.input-field option {
   border: 1px solid var(--border);
   border-radius: 0.75rem;
   overflow: visible;
+  flex-shrink: 0;
+  margin-bottom: 0.5rem;
 }
 
 .bulk-header {
@@ -694,25 +698,75 @@ select.input-field option {
   border-bottom: 1px solid var(--border);
 }
 
-.input-with-button {
+.imported-keys-container {
   display: flex;
-  gap: 0.5rem;
-  align-items: center;
-}
-
-.input-with-button .input-field {
+  flex-direction: column;
   flex: 1;
-  min-width: 0;
+  min-height: 0;
+  border: 1px solid var(--border);
+  border-radius: 0.75rem;
+  background: var(--card);
+  overflow: hidden;
 }
 
-.input-with-button .btn-secondary {
-  white-space: nowrap;
-  padding: 0.5rem 0.75rem;
+.keys-header {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 1rem;
+  background: var(--hover);
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
 }
 
-.input-with-button .btn-secondary svg {
-  width: 14px;
-  height: 14px;
+.imported-keys-list {
+  overflow-y: auto;
+  flex: 1;
+  padding: 0.5rem;
+  scrollbar-width: thin;
+  scrollbar-color: var(--border) transparent;
+}
+
+.imported-keys-list::-webkit-scrollbar {
+  width: 6px;
+}
+
+.imported-keys-list::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.imported-keys-list::-webkit-scrollbar-thumb {
+  background-color: var(--border);
+  border-radius: 3px;
+}
+
+.imported-key-item {
+  display: flex;
+  align-items: flex-start;
+  padding: 1rem;
+  border: 1px solid var(--border);
+  background: var(--background);
+  transition: background-color 0.2s ease;
+  border-radius: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.imported-key-item:last-child {
+  margin-bottom: 0;
+}
+
+.imported-key-item:hover {
+  background: var(--hover);
+}
+
+.modal-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.75rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--border);
+  margin-top: 1rem;
+  flex-shrink: 0;
 }
 
 .bulk-content {
@@ -722,10 +776,7 @@ select.input-field option {
   display: flex;
   flex-direction: column;
   gap: 1rem;
-}
-
-.bulk-content .input-group {
-  margin-bottom: 0;
+  background: var(--background);
 }
 
 .bulk-notification {
@@ -741,56 +792,78 @@ select.input-field option {
   animation: slideUp 0.3s ease-out, fadeOut 0.3s ease-out 1.7s forwards;
   z-index: 10;
   white-space: nowrap;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
-@keyframes slideUp {
-  from { transform: translate(-50%, 100%); opacity: 0; }
-  to { transform: translate(-50%, 0); opacity: 1; }
-}
-
-@keyframes fadeOut {
-  from { opacity: 1; }
-  to { opacity: 0; }
-}
-
-.imported-keys-container {
+.key-content {
+  flex: 1;
   display: flex;
   flex-direction: column;
   gap: 1rem;
+  min-width: 0;
 }
 
-.keys-header {
+.key-config {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.key-config .input-group {
+  margin-bottom: 0;
+}
+
+.selection-controls {
+  margin-left: auto;
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.btn-sm {
+  padding: 0.25rem 0.5rem;
+  font-size: 0.875rem;
+}
+
+.key-select {
   display: flex;
   align-items: center;
-  gap: 0.75rem;
-  padding-bottom: 0.5rem;
-  border-bottom: 1px solid var(--border);
+  padding: 0 0.5rem;
 }
 
-.imported-keys-list {
-  overflow-y: auto;
-  max-height: calc(50vh - 100px);
-  padding-right: 1rem;
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
-  margin-top: 0.5rem;
+.key-checkbox {
+  width: 1.2rem;
+  height: 1.2rem;
+  cursor: pointer;
+  border: 2px solid var(--border);
+  border-radius: 0.25rem;
+  background-color: var(--background);
+}
+
+.key-checkbox:checked {
+  background-color: var(--primary);
+  border-color: var(--primary);
+}
+
+.key-checkbox:hover {
+  border-color: var(--primary);
 }
 
 .imported-key-item {
   display: flex;
-  gap: 1rem;
-  background: var(--card);
-  border: 1px solid var(--border);
-  border-radius: 0.75rem;
-  padding: 1.25rem;
-  transition: all 0.2s ease;
   align-items: flex-start;
+  padding: 1rem;
+  border-bottom: 1px solid var(--border);
+  background: var(--background);
+  transition: background-color 0.2s ease;
 }
 
 .imported-key-item:hover {
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
-  transform: translateY(-1px);
+  background: var(--hover);
+}
+
+.imported-key-item:hover .project-actions {
+  opacity: 1;
 }
 
 .key-number {
@@ -805,13 +878,6 @@ select.input-field option {
   font-size: 0.875rem;
   color: var(--foreground);
   flex-shrink: 0;
-}
-
-.key-content {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
 }
 
 .key-title {
@@ -838,14 +904,6 @@ select.input-field option {
 
 .key-value:hover {
   background: var(--border);
-}
-
-.modal-footer {
-  display: flex;
-  justify-content: flex-end;
-  gap: 0.75rem;
-  padding-top: 1rem;
-  border-top: 1px solid var(--border);
 }
 
 .btn svg {
