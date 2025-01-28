@@ -28,9 +28,9 @@
             <div id="projects-list"></div>
         </div>
         <div class="theme-separator"></div>
-        <button class="clear-all-btn" onclick="confirmClearAllKeys()">
+        <button class="clear-all-btn" onclick="confirmClearAllKeys()" title="Clear All Keys">
             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/><line x1="10" x2="10" y1="11" y2="17"/><line x1="14" x2="14" y1="11" y2="17"/></svg>
-            Clear All Keys
+            <span>Clear All Keys</span>
         </button>
         <button id="toggle-sidebar" class="toggle-sidebar" onclick="toggleSidebar()">
             <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
@@ -125,6 +125,20 @@
                         <span class="font-semibold">Bulk Actions</span>
                     </div>
                     <div class="bulk-content">
+                        <div class="input-group with-icon">
+                            <label class="input-label">Set "Description" for all keys</label>
+                            <div class="input-with-button">
+                                <input type="text" id="bulk-description" class="input-field" placeholder="Add a description for all keys...">
+                                <button class="btn btn-secondary" onclick="applyBulkDescription()">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
+                                    Apply
+                                </button>
+                                <button class="btn btn-secondary" onclick="clearAllDescriptions()" title="Clear all descriptions">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/></svg>
+                                    Clear All
+                                </button>
+                            </div>
+                        </div>
                         <div class="input-group with-icon">
                             <label class="input-label">Set "Used with" for all keys</label>
                             <div class="input-with-button">
@@ -787,6 +801,50 @@
             const notification = document.createElement('div');
             notification.className = 'bulk-notification';
             notification.textContent = `Applied "${bulkValue}" to ${fields.length} keys`;
+            document.querySelector('.bulk-content').appendChild(notification);
+            setTimeout(() => notification.remove(), 2000);
+        }
+
+        function applyBulkDescription() {
+            const bulkValue = document.getElementById('bulk-description').value.trim();
+            if (!bulkValue) {
+                alert('Please enter a description to apply');
+                return;
+            }
+            
+            const fields = document.querySelectorAll('.description-field');
+            fields.forEach(field => {
+                field.value = bulkValue;
+                // Add a brief highlight effect to show the change
+                field.style.backgroundColor = 'var(--hover)';
+                setTimeout(() => {
+                    field.style.backgroundColor = '';
+                }, 300);
+            });
+
+            // Show feedback
+            const notification = document.createElement('div');
+            notification.className = 'bulk-notification';
+            notification.textContent = `Applied description to ${fields.length} keys`;
+            document.querySelector('.bulk-content').appendChild(notification);
+            setTimeout(() => notification.remove(), 2000);
+        }
+
+        function clearAllDescriptions() {
+            const fields = document.querySelectorAll('.description-field');
+            fields.forEach(field => {
+                field.value = '';
+                // Add a brief highlight effect to show the change
+                field.style.backgroundColor = 'var(--hover)';
+                setTimeout(() => {
+                    field.style.backgroundColor = '';
+                }, 300);
+            });
+
+            // Show feedback
+            const notification = document.createElement('div');
+            notification.className = 'bulk-notification';
+            notification.textContent = `Cleared descriptions for ${fields.length} keys`;
             document.querySelector('.bulk-content').appendChild(notification);
             setTimeout(() => notification.remove(), 2000);
         }
