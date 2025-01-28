@@ -36,27 +36,38 @@ def get_keys():
         logger.error(f"Error fetching keys: {str(e)}")
         return jsonify({'error': 'Failed to fetch keys'}), 500
 
+def generate_unique_name(base_name, project_id=None):
+    """Generate a unique name by adding a numeric suffix if needed."""
+    name = base_name
+    counter = 1
+    while True:
+        existing = APIKey.query.filter_by(name=name, project_id=project_id).first()
+        if not existing:
+            return name
+        name = f"{base_name}{counter}"
+        counter += 1
+
 @app.route('/keys', methods=['POST'])
 def add_key():
     try:
         data = request.get_json()
         if not data or 'name' not in data or 'key' not in data:
             return jsonify({'error': 'Missing required fields'}), 400
-            
-        if APIKey.query.filter_by(name=data['name']).first():
-            return jsonify({'error': 'Key name already exists'}), 409
+        
+        project_id = data.get('project_id')
+        unique_name = generate_unique_name(data['name'], project_id)
             
         new_key = APIKey(
-            name=data['name'],
+            name=unique_name,
             key=data['key'],
             description=data.get('description'),
             used_with=data.get('used_with'),
-            project_id=data.get('project_id')
+            project_id=project_id
         )
         
         db.session.add(new_key)
         db.session.commit()
-        logger.info(f"Added new key: {data['name']}")
+        logger.info(f"Added new key: {unique_name}")
         return jsonify(new_key.to_dict()), 201
         
     except Exception as e:
@@ -83,8 +94,9 @@ def update_key(key_id):
         key = APIKey.query.get_or_404(key_id)
         data = request.get_json()
         
-        if 'name' in data:
-            key.name = data['name']
+        if 'name' in data and data['name'] != key.name:
+            unique_name = generate_unique_name(data['name'], data.get('project_id', key.project_id))
+            key.name = unique_name
         if 'key' in data:
             key.key = data['key']
         if 'description' in data:
@@ -93,6 +105,9 @@ def update_key(key_id):
             key.used_with = data['used_with']
         if 'project_id' in data:
             key.project_id = data['project_id']
+            # If project changed, check if name needs to be updated
+            if key.project_id != data['project_id']:
+                key.name = generate_unique_name(key.name, data['project_id'])
             
         db.session.commit()
         logger.info(f"Updated key: {key.name}")

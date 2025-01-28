@@ -18,7 +18,7 @@ class Project(db.Model):
 
 class APIKey(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String(100), nullable=False, unique=True)
+    name = db.Column(db.String(100), nullable=False)
     key = db.Column(db.String(256), nullable=False)
     description = db.Column(db.Text)
     used_with = db.Column(db.String(200))
@@ -26,6 +26,10 @@ class APIKey(db.Model):
     project = db.relationship('Project', backref='keys')
     created_at = db.Column(db.DateTime, server_default=db.func.now())
     updated_at = db.Column(db.DateTime, server_default=db.func.now(), onupdate=db.func.now())
+
+    __table_args__ = (
+        db.UniqueConstraint('name', 'project_id', name='unique_name_per_project'),
+    )
 
     def to_dict(self):
         return {
