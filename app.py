@@ -4,6 +4,8 @@ from flask import Flask, render_template, request, jsonify, redirect, url_for
 from flask_migrate import Migrate
 from database import db, APIKey, Project
 from datetime import datetime
+import re
+import os
 
 logging.config.fileConfig('logging.conf')
 logger = logging.getLogger(__name__)
@@ -55,6 +57,40 @@ def get_keys():
         logger.error(f"Error fetching keys: {str(e)}")
         logger.exception("Full traceback:")
         return jsonify({'error': f'Failed to fetch keys: {str(e)}'}), 500
+
+@app.route('/keys', methods=['DELETE'])
+def delete_all_keys():
+    try:
+        # Get count before deletion for logging
+        count = APIKey.query.count()
+        
+        # Delete all keys
+        APIKey.query.delete()
+        db.session.commit()
+        
+        logger.info(f"Successfully deleted all {count} keys")
+        return jsonify({'message': f'Successfully deleted {count} keys', 'count': count}), 200
+    except Exception as e:
+        db.session.rollback()
+        logger.error(f"Error deleting all keys: {str(e)}")
+        return jsonify({'error': 'Failed to delete all keys'}), 500
+
+@app.route('/projects/<int:project_id>/keys', methods=['DELETE'])
+def delete_project_keys(project_id):
+    try:
+        # Get count before deletion for logging
+        count = APIKey.query.filter_by(project_id=project_id).count()
+        
+        # Delete project-specific keys
+        APIKey.query.filter_by(project_id=project_id).delete()
+        db.session.commit()
+        
+        logger.info(f"Successfully deleted {count} keys from project {project_id}")
+        return jsonify({'message': f'Successfully deleted {count} keys', 'count': count}), 200
+    except Exception as e:
+        db.session.rollback()
+        logger.error(f"Error deleting keys from project {project_id}: {str(e)}")
+        return jsonify({'error': f'Failed to delete keys from project {project_id}'}), 500
 
 def generate_unique_name(base_name, project_id=None):
     """Generate a unique name by adding a numeric suffix if needed."""
@@ -287,6 +323,142 @@ def reorder_key(key_id):
         logger.error(f"Error reordering key: {str(e)}")
         logger.exception("Full traceback:")
         return jsonify({'error': f'Failed to reorder key: {str(e)}'}), 500
+
+@app.route('/projects/<int:project_id>/import-env', methods=['POST'])
+def import_env_file(project_id):
+    try:
+        if 'file' not in request.files:
+            return jsonify({'error': 'No file provided'}), 400
+            
+        file = request.files['file']
+        if file.filename == '':
+            return jsonify({'error': 'No file selected'}), 400
+
+        # Check file extension (case-insensitive)
+        allowed_extensions = {'.env', '.json', '.yaml', '.yml', '.properties', '.conf', '.config'}
+        
+        # Special handling for files that start with a dot
+        filename = file.filename.lower()
+        if filename.startswith('.'):
+            file_ext = '.' + filename.split('.', 1)[1] if '.' in filename[1:] else filename
+        else:
+            file_ext = os.path.splitext(filename)[1]
+        
+        # Log the file details for debugging
+        logger.info(f"Attempting to import file: {file.filename} (extension: {file_ext})")
+        
+        if file_ext not in allowed_extensions:
+            return jsonify({'error': f'Invalid file type. Supported formats: {", ".join(allowed_extensions)}'}), 400
+
+        # Read the file content
+        try:
+            content = file.read().decode('utf-8')
+        except UnicodeDecodeError:
+            return jsonify({'error': 'File encoding not supported. Please ensure the file is UTF-8 encoded.'}), 400
+
+        imported_keys = []
+        
+        if file_ext == '.json':
+            # Parse JSON file
+            try:
+                import json
+                data = json.loads(content)
+                if isinstance(data, dict):
+                    keys_to_import = flatten_json(data)
+                else:
+                    return jsonify({'error': 'Invalid JSON format. Expected object structure'}), 400
+            except json.JSONDecodeError as e:
+                return jsonify({'error': f'Invalid JSON format: {str(e)}'}), 400
+                
+        elif file_ext in {'.yaml', '.yml'}:
+            # Parse YAML file
+            try:
+                import yaml
+                data = yaml.safe_load(content)
+                if isinstance(data, dict):
+                    keys_to_import = flatten_json(data)
+                else:
+                    return jsonify({'error': 'Invalid YAML format. Expected object structure'}), 400
+            except yaml.YAMLError as e:
+                return jsonify({'error': f'Invalid YAML format: {str(e)}'}), 400
+                
+        else:  # .env, .properties, .conf, .config
+            # More lenient regex pattern for env files
+            # Supports various formats including:
+            # KEY=value
+            # KEY = value
+            # KEY: value
+            # KEY:value
+            # export KEY=value
+            # KEY='value'
+            # KEY="value"
+            # KEY=value # comment
+            pattern = r'^(?:export\s+)?([A-Za-z_][A-Za-z0-9_]*)\s*[=:]\s*([\'\"]?.*?[\'\"]?)(?:\s*[#;].*)?$'
+            
+            keys_to_import = {}
+            line_number = 0
+            for line in content.split('\n'):
+                line_number += 1
+                line = line.strip()
+                if not line or line.startswith(('#', '//', ';')):  # Skip comments and empty lines
+                    continue
+                    
+                match = re.match(pattern, line)
+                if match:
+                    key_name = match.group(1)
+                    key_value = match.group(2).strip('\'"')  # Strip quotes if present
+                    keys_to_import[key_name] = key_value
+                else:
+                    logger.warning(f"Skipped invalid line {line_number} in {file.filename}: {line}")
+
+            if not keys_to_import:
+                return jsonify({'error': 'No valid key-value pairs found in the file. Please check the file format.'}), 400
+
+        # Import the collected keys
+        for key_name, key_value in keys_to_import.items():
+            # Generate unique name if key already exists
+            unique_name = generate_unique_name(key_name, project_id)
+            
+            # Get the maximum position for the project
+            max_position = db.session.query(db.func.max(APIKey.position)).filter(
+                APIKey.project_id == project_id
+            ).scalar() or -1
+            
+            # Create new API key entry
+            new_key = APIKey(
+                name=unique_name,
+                key=str(key_value),  # Convert to string in case of numeric values
+                description=f"Imported from {file.filename}",
+                project_id=project_id,
+                position=max_position + 1
+            )
+            
+            db.session.add(new_key)
+            imported_keys.append(new_key)
+        
+        db.session.commit()
+        logger.info(f"Successfully imported {len(imported_keys)} keys from {file.filename}")
+        
+        return jsonify({
+            'message': f'Successfully imported {len(imported_keys)} keys',
+            'keys': [key.to_dict() for key in imported_keys]
+        }), 201
+        
+    except Exception as e:
+        db.session.rollback()
+        logger.error(f"Error importing file: {str(e)}")
+        return jsonify({'error': f'Failed to import file: {str(e)}'}), 500
+
+def flatten_json(data, parent_key='', sep='_'):
+    """Flatten nested JSON structure into key-value pairs."""
+    items = {}
+    for k, v in data.items():
+        new_key = f"{parent_key}{sep}{k}" if parent_key else k
+        if isinstance(v, dict):
+            items.update(flatten_json(v, new_key, sep=sep))
+        else:
+            items[new_key] = v
+    return items
 
 @app.cli.command("check-db")
 def check_db():
