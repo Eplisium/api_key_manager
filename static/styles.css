@@ -293,20 +293,25 @@ select.input-field option {
 }
 
 .sidebar.collapsed .project-item {
-  padding: 0.5rem;
+  padding: 0.375rem;
   justify-content: center;
   position: relative;
-  width: 30px;
-  height: 30px;
+  width: 28px;
+  height: 28px;
   margin: 0.5rem auto;
-  border-radius: 4px;
+  border-radius: 0.375rem;
+  background: transparent;
+}
+
+.sidebar.collapsed .project-item:hover {
+  background-color: var(--border);
 }
 
 .sidebar.collapsed .project-item::before {
   content: '';
   position: absolute;
-  width: 20px;
-  height: 20px;
+  width: 18px;
+  height: 18px;
   background: currentColor;
   border-radius: 3px;
 }
@@ -316,11 +321,17 @@ select.input-field option {
 }
 
 .sidebar.collapsed .btn-icon.w-full {
-  padding: 0.5rem;
+  padding: 0.375rem;
   justify-content: center;
-  width: 30px;
-  height: 30px;
-  margin: 0 auto 0.5rem;
+  width: 28px;
+  height: 28px;
+  margin: 0.5rem auto;
+  border-radius: 0.375rem;
+  background: transparent;
+}
+
+.sidebar.collapsed .btn-icon.w-full:hover {
+  background-color: var(--border);
 }
 
 .project-tooltip {
@@ -460,9 +471,9 @@ select.input-field option {
   display: flex;
   align-items: center;
   justify-content: center;
-  margin: 1rem auto;
-  width: auto;
-  height: auto;
+  margin: 0.5rem auto;
+  width: 28px;
+  height: 28px;
 }
 
 .theme-toggle:hover {
