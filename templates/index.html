@@ -46,6 +46,17 @@
                     <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
                     Import
                 </button>
+                <div class="dropdown" style="margin-right: 8px;">
+                    <button class="btn btn-secondary" onclick="toggleExportDropdown()">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                        Export
+                    </button>
+                    <div class="dropdown-content" id="export-dropdown">
+                        <a href="#" onclick="exportKeys('env')">.env format</a>
+                        <a href="#" onclick="exportKeys('json')">JSON format</a>
+                        <a href="#" onclick="exportKeys('yaml')">YAML format</a>
+                    </div>
+                </div>
                 <button class="btn btn-primary" onclick="showAddModal()">Add New Key</button>
             </div>
         </header>
@@ -300,6 +311,8 @@
             document.querySelectorAll('.project-item').forEach(item => {
                 item.classList.remove('active');
             });
+            // Hide import button when showing all keys
+            document.getElementById('import-env-btn').style.display = 'none';
             fetchKeys();
         }
 
@@ -698,6 +711,11 @@
                 document.querySelectorAll('.project-item').forEach(item => {
                     item.classList.toggle('active', item.dataset.projectId == selectedProject);
                 });
+                // Show import button if a project is selected
+                document.getElementById('import-env-btn').style.display = 'inline-flex';
+            } else {
+                // Hide import button if no project is selected
+                document.getElementById('import-env-btn').style.display = 'none';
             }
             
             await fetchKeys();
@@ -919,6 +937,42 @@
             } catch (error) {
                 console.error('Error clearing keys:', error);
                 alert('Failed to clear keys. Please try again.');
+            }
+        }
+
+        function toggleExportDropdown() {
+            document.getElementById("export-dropdown").classList.toggle("show");
+        }
+
+        // Close the dropdown if the user clicks outside of it
+        window.onclick = function(event) {
+            if (!event.target.matches('.btn-secondary')) {
+                var dropdowns = document.getElementsByClassName("dropdown-content");
+                for (var i = 0; i < dropdowns.length; i++) {
+                    var openDropdown = dropdowns[i];
+                    if (openDropdown.classList.contains('show')) {
+                        openDropdown.classList.remove('show');
+                    }
+                }
+            }
+        }
+
+        async function exportKeys(format) {
+            try {
+                // Build the export URL with the current project (if any) and format
+                let url = `/export?format=${format}`;
+                if (selectedProject) {
+                    url += `&project_id=${selectedProject}`;
+                }
+                
+                // Trigger the download
+                window.location.href = url;
+                
+                // Close the dropdown
+                document.getElementById("export-dropdown").classList.remove("show");
+            } catch (error) {
+                console.error('Error exporting keys:', error);
+                alert('Failed to export keys. Please try again.');
             }
         }
     </script>

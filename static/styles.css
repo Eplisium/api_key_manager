@@ -888,3 +888,45 @@ select.input-field option {
 .used-with-field {
   transition: background-color 0.3s ease;
 }
+
+.dropdown {
+    position: relative;
+    display: inline-block;
+}
+
+.dropdown-content {
+    display: none;
+    position: absolute;
+    background-color: var(--background);
+    min-width: 160px;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+    z-index: 1000;
+    border-radius: 4px;
+    border: 1px solid var(--border);
+    margin-top: 4px;
+    right: 0;
+}
+
+.dropdown-content a {
+    color: var(--text);
+    padding: 8px 16px;
+    text-decoration: none;
+    display: block;
+    font-size: 14px;
+}
+
+.dropdown-content a:hover {
+    background-color: var(--hover);
+}
+
+.dropdown-content a:first-child {
+    border-radius: 4px 4px 0 0;
+}
+
+.dropdown-content a:last-child {
+    border-radius: 0 0 4px 4px;
+}
+
+.show {
+    display: block;
+}

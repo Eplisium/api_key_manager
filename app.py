@@ -1,11 +1,14 @@
 import logging
 import logging.config
-from flask import Flask, render_template, request, jsonify, redirect, url_for
+from flask import Flask, render_template, request, jsonify, redirect, url_for, send_file
 from flask_migrate import Migrate
 from database import db, APIKey, Project
 from datetime import datetime
 import re
 import os
+import io
+import json
+import yaml
 
 logging.config.fileConfig('logging.conf')
 logger = logging.getLogger(__name__)
@@ -485,6 +488,55 @@ def check_db():
     except Exception as e:
         print(f"Error checking database: {str(e)}")
         raise
+
+@app.route('/export', methods=['GET'])
+def export_keys():
+    try:
+        # Get export format and project_id from query params
+        export_format = request.args.get('format', 'env')
+        project_id = request.args.get('project_id', type=int)
+        
+        # Build query
+        query = APIKey.query
+        if project_id is not None:
+            query = query.filter_by(project_id=project_id)
+            project_name = Project.query.get_or_404(project_id).name
+        
+        # Order by position within each project
+        keys = query.order_by(APIKey.project_id, APIKey.position).all()
+        
+        if not keys:
+            return jsonify({'error': 'No keys found to export'}), 404
+            
+        # Prepare the output based on format
+        if export_format == 'json':
+            output = json.dumps({key.name: key.key for key in keys}, indent=2)
+            mimetype = 'application/json'
+            filename = f"api_keys_{project_name if project_id else 'all'}.json"
+        elif export_format == 'yaml':
+            output = yaml.dump({key.name: key.key for key in keys}, default_flow_style=False)
+            mimetype = 'application/x-yaml'
+            filename = f"api_keys_{project_name if project_id else 'all'}.yaml"
+        else:  # .env format
+            output = '\n'.join([f"{key.name}={key.key}" for key in keys])
+            mimetype = 'text/plain'
+            filename = f"api_keys_{project_name if project_id else 'all'}.env"
+            
+        # Create in-memory file
+        buffer = io.BytesIO()
+        buffer.write(output.encode('utf-8'))
+        buffer.seek(0)
+        
+        return send_file(
+            buffer,
+            mimetype=mimetype,
+            as_attachment=True,
+            download_name=filename
+        )
+        
+    except Exception as e:
+        logger.error(f"Error exporting keys: {str(e)}")
+        return jsonify({'error': f'Failed to export keys: {str(e)}'}), 500
 
 if __name__ == '__main__':
     app.run(host='localhost', port=5000, debug=True)# Main application file 
