@@ -1,5 +1,7 @@
 # API Key Manager
 
+![API Key Manager](images/main.png)
+
 A Flask-based web application for managing and organizing API keys with a modern, responsive interface. This application helps developers and teams keep track of their API keys, organize them by projects, and maintain a secure central repository of API credentials.
 
 ## Features
