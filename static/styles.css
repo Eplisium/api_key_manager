@@ -1227,6 +1227,41 @@ select.input-field option {
     font-weight: 500;
 }
 
+.word-select-btn:hover {
+    background: var(--hover);
+    border-color: var(--border-hover);
+}
+
+.word-select-btn:active {
+    transform: translateY(1px);
+}
+
+.word-select-btn.active {
+    background: var(--primary);
+    color: white;
+    border-color: var(--primary);
+}
+
+.word-select-btn.active:hover {
+    background: var(--primary-hover);
+}
+
+[data-theme="dark"] .word-select-btn {
+    background: var(--card);
+}
+
+[data-theme="dark"] .word-select-btn:hover {
+    background: var(--hover);
+}
+
+[data-theme="dark"] .word-select-btn.active {
+    background: var(--primary);
+}
+
+[data-theme="dark"] .word-select-btn.active:hover {
+    background: var(--primary-hover);
+}
+
 .color-wheel {
     width: 100%;
     height: 32px;
