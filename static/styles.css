@@ -1104,8 +1104,24 @@ select.input-field option {
     100% { color: #ff0000; }
 }
 
-.title.rainbow {
+/* Remove individual span animations and apply to title only */
+.title.rainbow,
+.title.rainbow .title-api,
+.title.rainbow .title-key,
+.title.rainbow .title-manager {
     animation: rainbow 3s linear infinite;
+    /* Ensure all spans start at the same point in the animation */
+    animation-delay: 0s;
+}
+
+/* Override any individual span colors when rainbow is active */
+.title.rainbow span {
+    color: inherit !important;
+    transition: none !important;
+}
+
+.title span {
+    transition: color 0.2s ease;
 }
 
 .key-text {
