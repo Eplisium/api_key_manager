@@ -575,6 +575,7 @@ def export_keys():
         # Get export format and project_id from query params
         export_format = request.args.get('format', 'env')
         project_id = request.args.get('project_id', type=int)
+        password = request.args.get('password')
         
         # Build query
         query = APIKey.query
@@ -587,6 +588,35 @@ def export_keys():
         
         if not keys:
             return jsonify({'error': 'No keys found to export'}), 404
+            
+        # If we have encrypted keys and no password provided, return error
+        encrypted_keys = [key for key in keys if key.encrypted]
+        if encrypted_keys and not password:
+            return jsonify({'error': 'Password required to export encrypted keys'}), 400
+            
+        # If we have a password and encrypted keys, decrypt them temporarily
+        if encrypted_keys and password:
+            try:
+                # Create temporary copies of encrypted keys to avoid modifying the database
+                temp_keys = []
+                for key in keys:
+                    if key.encrypted:
+                        # Create a copy of the key
+                        temp_key = APIKey(
+                            name=key.name,
+                            key=key.key,
+                            encrypted=key.encrypted
+                        )
+                        # Decrypt the temporary key
+                        temp_key.decrypt_key(password)
+                        temp_keys.append(temp_key)
+                    else:
+                        temp_keys.append(key)
+                # Use the temporary keys for export
+                keys = temp_keys
+            except Exception as e:
+                logger.error(f"Error decrypting keys for export: {str(e)}")
+                return jsonify({'error': 'Invalid password or decryption failed'}), 400
             
         # Prepare the output based on format
         if export_format == 'json':

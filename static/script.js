@@ -1094,19 +1094,40 @@ async function importFromOS() {
 
 async function exportKeys(format) {
     try {
-        let url = `/export?format=${format}`;
-        if (selectedProject) {
-            url += `&project_id=${selectedProject}`;
+        // Check if we have any encrypted keys first
+        const response = await fetch(`/keys/status${selectedProject ? `?project_id=${selectedProject}` : ''}`);
+        const status = await response.json();
+        
+        if (status.encrypted_keys > 0) {
+            // Show password prompt for decryption
+            currentKeyAction = 'export';
+            currentKeyData = { format };  // Store format for later use
+            showPasswordPrompt('export');
+            return;
         }
         
-        window.location.href = url;
-        showNotification('Export started', 'success');
-        
-        document.getElementById("export-dropdown").classList.remove("show");
+        // If no encrypted keys, proceed with normal export
+        performExport(format);
     } catch (error) {
-        console.error('Error exporting keys:', error);
-        showNotification('Failed to export keys. Please try again.', 'error');
+        console.error('Error during export:', error);
+        showNotification('Failed to check encryption status', 'error');
     }
+}
+
+function performExport(format, password = null) {
+    const queryParams = new URLSearchParams({
+        format: format
+    });
+    
+    if (selectedProject) {
+        queryParams.append('project_id', selectedProject);
+    }
+    
+    if (password) {
+        queryParams.append('password', password);
+    }
+    
+    window.location.href = `/export?${queryParams.toString()}`;
 }
 
 function handleProjectDragStart(event, projectId) {
@@ -1636,19 +1657,40 @@ async function importFromOS() {
 // Update error handling in exportKeys
 async function exportKeys(format) {
     try {
-        let url = `/export?format=${format}`;
-        if (selectedProject) {
-            url += `&project_id=${selectedProject}`;
+        // Check if we have any encrypted keys first
+        const response = await fetch(`/keys/status${selectedProject ? `?project_id=${selectedProject}` : ''}`);
+        const status = await response.json();
+        
+        if (status.encrypted_keys > 0) {
+            // Show password prompt for decryption
+            currentKeyAction = 'export';
+            currentKeyData = { format };  // Store format for later use
+            showPasswordPrompt('export');
+            return;
         }
         
-        window.location.href = url;
-        showNotification('Export started', 'success');
-        
-        document.getElementById("export-dropdown").classList.remove("show");
+        // If no encrypted keys, proceed with normal export
+        performExport(format);
     } catch (error) {
-        console.error('Error exporting keys:', error);
-        showNotification('Failed to export keys. Please try again.', 'error');
+        console.error('Error during export:', error);
+        showNotification('Failed to check encryption status', 'error');
     }
+}
+
+function performExport(format, password = null) {
+    const queryParams = new URLSearchParams({
+        format: format
+    });
+    
+    if (selectedProject) {
+        queryParams.append('project_id', selectedProject);
+    }
+    
+    if (password) {
+        queryParams.append('password', password);
+    }
+    
+    window.location.href = `/export?${queryParams.toString()}`;
 }
 
 // Update error handling in handleProjectDrop
@@ -1715,13 +1757,21 @@ async function handlePasswordSubmit(event) {
     const keyId = document.getElementById('password-prompt-key-id').value;
     
     try {
+        if (action === 'export') {
+            // Handle export with password
+            performExport(currentKeyData.format, password);
+            hidePasswordPrompt();
+            return;
+        }
+        
+        // Handle other password-protected actions
         // First decrypt the key
         const response = await fetch('/keys/decrypt', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
                 password: password,
-                key_ids: [parseInt(keyId)]
+                key_ids: keyId ? [parseInt(keyId)] : undefined
             })
         });
         
@@ -1731,28 +1781,30 @@ async function handlePasswordSubmit(event) {
         }
         
         // Get the decrypted key data
-        const keyResponse = await fetch(`/keys/${keyId}`);
-        if (!keyResponse.ok) {
-            throw new Error('Failed to fetch key data');
+        if (keyId) {
+            const keyResponse = await fetch(`/keys/${keyId}`);
+            if (!keyResponse.ok) {
+                throw new Error('Failed to fetch key data');
+            }
+            const keyData = await keyResponse.json();
+            
+            // Perform the requested action
+            if (action === 'copy') {
+                await copyToClipboard(keyData.key);
+            } else if (action === 'edit') {
+                await performEdit(keyData);
+            }
+            
+            // Re-encrypt the key immediately
+            await fetch('/keys/encrypt', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    password: password,
+                    key_ids: [parseInt(keyId)]
+                })
+            });
         }
-        const keyData = await keyResponse.json();
-        
-        // Perform the requested action
-        if (action === 'copy') {
-            await copyToClipboard(keyData.key);
-        } else if (action === 'edit') {
-            await performEdit(keyData);
-        }
-        
-        // Re-encrypt the key immediately
-        await fetch('/keys/encrypt', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                password: password,
-                key_ids: [parseInt(keyId)]
-            })
-        });
         
         hidePasswordPrompt();
         
