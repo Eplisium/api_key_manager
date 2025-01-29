@@ -380,7 +380,8 @@ select.input-field option {
 
 .sidebar.collapsed .project-item:hover .project-tooltip,
 .sidebar.collapsed .btn-icon.w-full:hover .project-tooltip,
-.sidebar.collapsed .theme-toggle:hover .project-tooltip {
+.sidebar.collapsed .theme-toggle:hover .project-tooltip,
+.sidebar.collapsed .clear-all-btn:hover .project-tooltip {
   display: block;
   opacity: 1;
 }
