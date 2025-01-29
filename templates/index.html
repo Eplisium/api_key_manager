@@ -206,8 +206,6 @@
         </div>
     </div>
 
-    <div id="copy-success" class="copy-success">Key copied to clipboard!</div>
-
     <!-- Add Project Delete Confirmation Modal -->
     <div id="delete-project-modal" class="modal">
         <div class="modal-content">
@@ -321,6 +319,50 @@
                 <div class="modal-footer-right">
                     <button class="btn btn-secondary" onclick="hideColorPickerModal()">Cancel</button>
                     <button class="btn btn-primary" onclick="applyCustomColor()">Apply Color</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Clear Keys Confirmation Modal -->
+    <div id="clear-keys-modal" class="modal">
+        <div class="modal-content">
+            <div class="delete-project-header">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>
+                <h2 class="text-xl font-semibold">Clear All Keys</h2>
+            </div>
+            <div class="delete-project-content">
+                <p class="delete-project-message" id="clear-keys-message"></p>
+                <div class="delete-options">
+                    <button class="btn btn-danger" onclick="executeClearAllKeys()">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/></svg>
+                        Clear All Keys
+                    </button>
+                    <button class="btn" onclick="hideClearKeysModal()">
+                        Cancel
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add Delete Key Confirmation Modal -->
+    <div id="delete-key-modal" class="modal">
+        <div class="modal-content">
+            <div class="delete-project-header">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>
+                <h2 class="text-xl font-semibold">Delete Key</h2>
+            </div>
+            <div class="delete-project-content">
+                <p class="delete-project-message">Are you sure you want to delete this key? This action cannot be undone.</p>
+                <div class="delete-options">
+                    <button class="btn btn-danger" onclick="executeKeyDelete()">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/></svg>
+                        Delete Key
+                    </button>
+                    <button class="btn" onclick="hideDeleteKeyModal()">
+                        Cancel
+                    </button>
                 </div>
             </div>
         </div>
@@ -633,11 +675,12 @@
                     throw new Error(error.error || 'Failed to save key');
                 }
 
+                showNotification(isEditMode ? 'Key updated successfully' : 'Key added successfully', 'success');
                 hideModal();
                 fetchKeys();
             } catch (error) {
                 console.error('Error saving key:', error);
-                alert(error.message);
+                showNotification(error.message, 'error');
             }
         }
 
@@ -658,7 +701,7 @@
                 document.getElementById('project-modal').classList.add('show');
             } catch (error) {
                 console.error('Error fetching project:', error);
-                alert('Failed to load project details');
+                showNotification('Failed to load project details', 'error');
             }
         }
 
@@ -684,11 +727,12 @@
                     throw new Error(error.error || 'Failed to save project');
                 }
 
+                showNotification(isProjectEditMode ? 'Project updated successfully' : 'Project created successfully', 'success');
                 hideProjectModal();
                 fetchProjects();
             } catch (error) {
                 console.error('Error saving project:', error);
-                alert(error.message);
+                showNotification(error.message, 'error');
             }
         }
 
@@ -832,6 +876,9 @@
             }
             try {
                 const response = await fetch(`/keys/${keyId}`);
+                if (!response.ok) {
+                    throw new Error('Failed to load key details');
+                }
                 const key = await response.json();
                 
                 document.getElementById('key-id').value = key.id;
@@ -846,7 +893,7 @@
                 document.getElementById('key-modal').classList.add('show');
             } catch (error) {
                 console.error('Error fetching key:', error);
-                alert('Failed to load key details');
+                showNotification(error.message, 'error');
             }
         }
 
@@ -854,24 +901,7 @@
             if (event) {
                 event.stopPropagation();
             }
-            if (!confirm('Are you sure you want to delete this key?')) {
-                return;
-            }
-
-            try {
-                const response = await fetch(`/keys/${keyId}`, {
-                    method: 'DELETE'
-                });
-
-                if (!response.ok) {
-                    throw new Error('Failed to delete key');
-                }
-
-                fetchKeys();
-            } catch (error) {
-                console.error('Error deleting key:', error);
-                alert(error.message);
-            }
+            showDeleteKeyModal(keyId);
         }
 
         function showDeleteProjectModal(projectId) {
@@ -904,11 +934,7 @@
                 const responseData = await response.json();
                 
                 // Show a notification with what happened
-                const notification = document.createElement('div');
-                notification.className = 'clear-notification';
-                notification.textContent = `Project deleted. ${responseData.keys_affected} keys ${responseData.action}.`;
-                document.body.appendChild(notification);
-                setTimeout(() => notification.remove(), 3000);
+                showNotification(`Project deleted. ${responseData.keys_affected} keys ${responseData.action}`, 'success');
 
                 if (selectedProject === projectToDelete) {
                     showAllKeys();
@@ -917,7 +943,7 @@
                 hideDeleteProjectModal();
             } catch (error) {
                 console.error('Error deleting project:', error);
-                alert(error.message);
+                showNotification(error.message, 'error');
                 hideDeleteProjectModal();
             }
         }
@@ -927,18 +953,17 @@
                 event.stopPropagation();
             }
             showDeleteProjectModal(projectId);
-        }
+                }
 
-        function copyToClipboard(text) {
+        function copyToClipboard(text, event) {
+            if (event) {
+                event.stopPropagation();
+            }
             navigator.clipboard.writeText(text).then(() => {
-                const notification = document.getElementById('copy-success');
-                notification.style.display = 'block';
-                setTimeout(() => {
-                    notification.style.display = 'none';
-                }, 2000);
+                showNotification('Key copied to clipboard!', 'success');
             }).catch(err => {
                 console.error('Failed to copy:', err);
-                alert('Failed to copy to clipboard');
+                showNotification('Failed to copy to clipboard', 'error');
             });
         }
 
@@ -1023,14 +1048,14 @@
         async function handleEnvFileUpload(event) {
             const file = event.target.files[0];
             if (!file) {
-                alert('Please select a file');
+                showNotification('Please select a file', 'error');
                 return;
             }
 
             const allowedExtensions = ['.env', '.json', '.yaml', '.yml', '.properties', '.conf', '.config'];
             const fileExt = file.name.substring(file.name.lastIndexOf('.')).toLowerCase();
             if (!allowedExtensions.includes(fileExt)) {
-                alert(`Invalid file type. Supported formats: ${allowedExtensions.join(', ')}`);
+                showNotification(`Invalid file type. Supported formats: ${allowedExtensions.join(', ')}`, 'error');
                 return;
             }
 
@@ -1046,12 +1071,13 @@
                 const result = await response.json();
                 if (response.ok) {
                     showPostImportModal(result.keys);
+                    showNotification('File imported successfully', 'success');
                 } else {
-                    alert(result.error || 'Failed to import file');
+                    throw new Error(result.error || 'Failed to import file');
                 }
             } catch (error) {
                 console.error('Error importing file:', error);
-                alert('Failed to import file');
+                showNotification('Failed to import file', 'error');
             }
 
             // Clear the file input
@@ -1103,7 +1129,7 @@
         function applyBulkUsedWith() {
             const bulkValue = document.getElementById('bulk-used-with').value.trim();
             if (!bulkValue) {
-                alert('Please enter a value to apply');
+                showNotification('Please enter a value to apply', 'error');
                 return;
             }
             
@@ -1117,18 +1143,13 @@
                 }, 300);
             });
 
-            // Show feedback
-            const notification = document.createElement('div');
-            notification.className = 'bulk-notification';
-            notification.textContent = `Applied "${bulkValue}" to ${fields.length} keys`;
-            document.querySelector('.bulk-content').appendChild(notification);
-            setTimeout(() => notification.remove(), 2000);
+            showNotification(`Applied "${bulkValue}" to ${fields.length} keys`, 'success');
         }
 
         function applyBulkDescription() {
             const bulkValue = document.getElementById('bulk-description').value.trim();
             if (!bulkValue) {
-                alert('Please enter a description to apply');
+                showNotification('Please enter a description to apply', 'error');
                 return;
             }
             
@@ -1143,11 +1164,7 @@
             });
 
             // Show feedback
-            const notification = document.createElement('div');
-            notification.className = 'bulk-notification';
-            notification.textContent = `Applied description to ${fields.length} keys`;
-            document.querySelector('.bulk-content').appendChild(notification);
-            setTimeout(() => notification.remove(), 2000);
+            showNotification(`Applied description to ${fields.length} keys`, 'success');
         }
 
         function clearAllDescriptions() {
@@ -1162,11 +1179,7 @@
             });
 
             // Show feedback
-            const notification = document.createElement('div');
-            notification.className = 'bulk-notification';
-            notification.textContent = `Cleared descriptions for ${fields.length} keys`;
-            document.querySelector('.bulk-content').appendChild(notification);
-            setTimeout(() => notification.remove(), 2000);
+            showNotification(`Cleared descriptions for ${fields.length} keys`, 'success');
         }
 
         let allKeysSelected = true;
@@ -1204,14 +1217,10 @@
                     `${remainingKeys} key${remainingKeys !== 1 ? 's' : ''} imported`;
                 
                 // Show feedback
-                const notification = document.createElement('div');
-                notification.className = 'bulk-notification';
-                notification.textContent = `Removed ${deletions.length} key${deletions.length !== 1 ? 's' : ''}`;
-                document.querySelector('.bulk-content').appendChild(notification);
-                setTimeout(() => notification.remove(), 2000);
+                showNotification(`Removed ${deletions.length} key${deletions.length !== 1 ? 's' : ''}`, 'success');
             } catch (error) {
                 console.error('Error removing keys:', error);
-                alert('Some keys failed to be removed. Please try again.');
+                showNotification('Some keys failed to be removed. Please try again.', 'error');
             }
         }
 
@@ -1233,7 +1242,7 @@
                 hidePostImportModal();
             } catch (error) {
                 console.error('Error updating imported keys:', error);
-                alert('Some keys failed to update. Please try again.');
+                showNotification('Some keys failed to update. Please try again.', 'error');
             }
         }
 
@@ -1257,13 +1266,18 @@
                 'all projects';
             
             const message = selectedProject ? 
-                `Are you sure you want to delete ALL keys from "${projectName}"?\n\nThis action cannot be undone. There is no built-in way to recover deleted keys.\n\nTip: Consider exporting your keys before deletion for backup.` :
-                `Are you sure you want to delete ALL keys from all projects?\n\nThis action cannot be undone. There is no built-in way to recover deleted keys.\n\nTip: Consider exporting your keys before deletion for backup.`;
+                `Are you sure you want to delete ALL keys from "${projectName}"?<br><br>This action cannot be undone. There is no built-in way to recover deleted keys.<br><br>Tip: Consider exporting your keys before deletion for backup.` :
+                `Are you sure you want to delete ALL keys from all projects?<br><br>This action cannot be undone. There is no built-in way to recover deleted keys.<br><br>Tip: Consider exporting your keys before deletion for backup.`;
 
-            if (!confirm(message)) {
-                return;
-            }
+            document.getElementById('clear-keys-message').innerHTML = message;
+            document.getElementById('clear-keys-modal').classList.add('show');
+        }
 
+        function hideClearKeysModal() {
+            document.getElementById('clear-keys-modal').classList.remove('show');
+        }
+
+        async function executeClearAllKeys() {
             try {
                 const url = selectedProject ? `/projects/${selectedProject}/keys` : '/keys';
                 const response = await fetch(url, {
@@ -1275,19 +1289,19 @@
                 }
 
                 const result = await response.json();
+                const projectName = selectedProject ? 
+                    document.querySelector(`.project-item[data-project-id="${selectedProject}"]`)?.querySelector('.project-name')?.textContent : 
+                    'all projects';
 
-                // Show success notification
-                const notification = document.createElement('div');
-                notification.className = 'clear-notification';
-                notification.textContent = `Deleted ${result.count} keys from ${projectName}`;
-                document.body.appendChild(notification);
-                setTimeout(() => notification.remove(), 3000);
+                showNotification(`Deleted ${result.count} keys from ${projectName}`, 'success');
 
                 // Refresh the keys list
                 fetchKeys();
             } catch (error) {
                 console.error('Error clearing keys:', error);
-                alert('Failed to clear keys. Please try again.');
+                showNotification('Failed to clear keys. Please try again.', 'error');
+            } finally {
+                hideClearKeysModal();
             }
         }
 
@@ -1321,34 +1335,32 @@
                 const result = await response.json();
                 if (response.ok) {
                     showPostImportModal(result.keys);
+                    showNotification('Environment variables imported successfully', 'success');
                 } else {
-                    alert(result.error || 'Failed to import OS environment variables');
+                    throw new Error(result.error || 'Failed to import OS environment variables');
                 }
             } catch (error) {
                 console.error('Error importing OS environment variables:', error);
-                alert('Failed to import OS environment variables');
+                showNotification(error.message, 'error');
             }
 
-            // Close the dropdown
             document.getElementById("import-dropdown").classList.remove("show");
         }
 
         async function exportKeys(format) {
             try {
-                // Build the export URL with the current project (if any) and format
                 let url = `/export?format=${format}`;
                 if (selectedProject) {
                     url += `&project_id=${selectedProject}`;
                 }
                 
-                // Trigger the download
                 window.location.href = url;
+                showNotification('Export started', 'success');
                 
-                // Close the dropdown
                 document.getElementById("export-dropdown").classList.remove("show");
             } catch (error) {
                 console.error('Error exporting keys:', error);
-                alert('Failed to export keys. Please try again.');
+                showNotification('Failed to export keys. Please try again.', 'error');
             }
         }
 
@@ -1399,11 +1411,11 @@
                     throw new Error(error.error || 'Failed to reorder project');
                 }
                 
-                // Refresh the projects list
+                showNotification('Project order updated', 'success');
                 await fetchProjects();
             } catch (error) {
                 console.error('Error reordering project:', error);
-                alert(error.message);
+                showNotification(error.message, 'error');
             } finally {
                 draggedProject = null;
             }
@@ -1649,6 +1661,270 @@
                 showColorPickerModal(event);
             }
         });
+
+        function showTooltip(element, text) {
+            const tooltip = document.createElement('div');
+            tooltip.className = 'tooltip';
+            tooltip.textContent = text;
+            
+            // Position the tooltip
+            const rect = element.getBoundingClientRect();
+            tooltip.style.left = `${rect.right + 8}px`;
+            tooltip.style.top = `${rect.top + rect.height / 2}px`;
+            
+            document.body.appendChild(tooltip);
+            setTimeout(() => tooltip.classList.add('show'), 10);
+            
+            return tooltip;
+        }
+
+        function hideTooltip(tooltip) {
+            if (tooltip) {
+                tooltip.classList.remove('show');
+                setTimeout(() => tooltip.remove(), 200);
+            }
+        }
+
+        function showNotification(message, type = 'success') {
+            // Remove any existing notifications
+            const existingNotifications = document.querySelectorAll('.notification');
+            existingNotifications.forEach(notification => notification.remove());
+            
+            const notification = document.createElement('div');
+            notification.className = `notification ${type}`;
+            
+            // Add appropriate icon based on type
+            let icon = '';
+            if (type === 'success') {
+                icon = '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>';
+            } else if (type === 'error') {
+                icon = '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>';
+            }
+            
+            notification.innerHTML = `${icon}${message}`;
+            document.body.appendChild(notification);
+            
+            // Remove the notification after 3 seconds
+            setTimeout(() => {
+                notification.style.opacity = '0';
+                setTimeout(() => notification.remove(), 300);
+            }, 3000);
+        }
+
+        let keyToDelete = null;
+
+        // Update handleFormSubmit for key saving
+        async function handleFormSubmit(event) {
+            event.preventDefault();
+            const formData = {
+                name: document.getElementById('name').value,
+                key: document.getElementById('key').value,
+                description: document.getElementById('description').value,
+                used_with: document.getElementById('used-with').value,
+                project_id: document.getElementById('project').value || null
+            };
+
+            const method = isEditMode ? 'PUT' : 'POST';
+            const url = isEditMode 
+                ? `/keys/${document.getElementById('key-id').value}`
+                : '/keys';
+
+            try {
+                const response = await fetch(url, {
+                    method: method,
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(formData)
+                });
+
+                if (!response.ok) {
+                    const error = await response.json();
+                    throw new Error(error.error || 'Failed to save key');
+                }
+
+                showNotification(isEditMode ? 'Key updated successfully' : 'Key added successfully', 'success');
+                hideModal();
+                fetchKeys();
+            } catch (error) {
+                console.error('Error saving key:', error);
+                showNotification(error.message, 'error');
+            }
+        }
+
+        // Update handleProjectSubmit for project saving
+        async function handleProjectSubmit(event) {
+            event.preventDefault();
+            const formData = {
+                name: document.getElementById('project-name').value
+            };
+            const projectId = document.getElementById('project-id').value;
+
+            try {
+                const url = isProjectEditMode ? `/projects/${projectId}` : '/projects';
+                const method = isProjectEditMode ? 'PUT' : 'POST';
+                
+                const response = await fetch(url, {
+                    method: method,
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(formData)
+                });
+
+                if (!response.ok) {
+                    const error = await response.json();
+                    throw new Error(error.error || 'Failed to save project');
+                }
+
+                showNotification(isProjectEditMode ? 'Project updated successfully' : 'Project created successfully', 'success');
+                hideProjectModal();
+                fetchProjects();
+            } catch (error) {
+                console.error('Error saving project:', error);
+                showNotification(error.message, 'error');
+            }
+        }
+
+        // Update deleteKey to show confirmation modal
+        function showDeleteKeyModal(keyId) {
+            keyToDelete = keyId;
+            document.getElementById('delete-key-modal').classList.add('show');
+        }
+
+        function hideDeleteKeyModal() {
+            document.getElementById('delete-key-modal').classList.remove('show');
+            keyToDelete = null;
+        }
+
+        async function executeKeyDelete() {
+            try {
+                const response = await fetch(`/keys/${keyToDelete}`, {
+                    method: 'DELETE'
+                });
+
+                if (!response.ok) {
+                    throw new Error('Failed to delete key');
+                }
+
+                showNotification('Key deleted successfully', 'success');
+                fetchKeys();
+            } catch (error) {
+                console.error('Error deleting key:', error);
+                showNotification(error.message, 'error');
+            } finally {
+                hideDeleteKeyModal();
+            }
+        }
+
+        // Update deleteKey function to use modal
+        async function deleteKey(keyId, event) {
+            if (event) {
+                event.stopPropagation();
+            }
+            showDeleteKeyModal(keyId);
+        }
+
+        // Update error handling in editKey
+        async function editKey(keyId, event) {
+            if (event) {
+                event.stopPropagation();
+            }
+            try {
+                const response = await fetch(`/keys/${keyId}`);
+                if (!response.ok) {
+                    throw new Error('Failed to load key details');
+                }
+                const key = await response.json();
+                
+                document.getElementById('key-id').value = key.id;
+                document.getElementById('name').value = key.name;
+                document.getElementById('key').value = key.key;
+                document.getElementById('description').value = key.description || '';
+                document.getElementById('used-with').value = key.used_with || '';
+                document.getElementById('project').value = key.project ? key.project.id : '';
+                
+                isEditMode = true;
+                document.getElementById('modal-title').textContent = 'Edit Key';
+                document.getElementById('key-modal').classList.add('show');
+            } catch (error) {
+                console.error('Error fetching key:', error);
+                showNotification(error.message, 'error');
+            }
+        }
+
+        // Update error handling in importFromOS
+        async function importFromOS() {
+            try {
+                const response = await fetch(`/projects/${selectedProject}/import-os-env`, {
+                    method: 'POST'
+                });
+
+                const result = await response.json();
+                if (response.ok) {
+                    showPostImportModal(result.keys);
+                    showNotification('Environment variables imported successfully', 'success');
+                } else {
+                    throw new Error(result.error || 'Failed to import OS environment variables');
+                }
+            } catch (error) {
+                console.error('Error importing OS environment variables:', error);
+                showNotification(error.message, 'error');
+            }
+
+            document.getElementById("import-dropdown").classList.remove("show");
+        }
+
+        // Update error handling in exportKeys
+        async function exportKeys(format) {
+            try {
+                let url = `/export?format=${format}`;
+                if (selectedProject) {
+                    url += `&project_id=${selectedProject}`;
+                }
+                
+                window.location.href = url;
+                showNotification('Export started', 'success');
+                
+                document.getElementById("export-dropdown").classList.remove("show");
+            } catch (error) {
+                console.error('Error exporting keys:', error);
+                showNotification('Failed to export keys. Please try again.', 'error');
+            }
+        }
+
+        // Update error handling in handleProjectDrop
+        async function handleProjectDrop(event) {
+            event.preventDefault();
+            const projectItem = event.currentTarget;
+            projectItem.classList.remove('drag-over');
+            
+            if (!draggedProject) return;
+            
+            const targetProjectId = parseInt(projectItem.dataset.projectId);
+            const sourceProjectId = draggedProject;
+            
+            if (sourceProjectId === targetProjectId) return;
+            
+            try {
+                const targetPosition = parseInt(projectItem.dataset.position);
+                
+                const response = await fetch(`/projects/${sourceProjectId}/reorder`, {
+                    method: 'PATCH',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ new_position: targetPosition })
+                });
+                
+                if (!response.ok) {
+                    const error = await response.json();
+                    throw new Error(error.error || 'Failed to reorder project');
+                }
+                
+                showNotification('Project order updated', 'success');
+                await fetchProjects();
+            } catch (error) {
+                console.error('Error reordering project:', error);
+                showNotification(error.message, 'error');
+            } finally {
+                draggedProject = null;
+            }
+        }
     </script>
 
     <style>
