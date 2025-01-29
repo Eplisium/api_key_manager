@@ -201,6 +201,32 @@
 
     <div id="copy-success" class="copy-success">Key copied to clipboard!</div>
 
+    <!-- Add Project Delete Confirmation Modal -->
+    <div id="delete-project-modal" class="modal">
+        <div class="modal-content">
+            <div class="delete-project-header">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>
+                <h2 class="text-xl font-semibold">Delete Project</h2>
+            </div>
+            <div class="delete-project-content">
+                <p class="delete-project-message">What would you like to do with the project and its associated keys?</p>
+                <div class="delete-options">
+                    <button class="btn btn-danger" onclick="executeProjectDelete(true)">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/></svg>
+                        Delete Project & Keys
+                    </button>
+                    <button class="btn btn-warning" onclick="executeProjectDelete(false)">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 16v2a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2h2"/><path d="M9 11v5"/><path d="m12 13 3-3-3-3"/></svg>
+                        Delete Project Only
+                    </button>
+                    <button class="btn" onclick="hideDeleteProjectModal()">
+                        Cancel
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <script>
         let isEditMode = false;
         let selectedProject = null;
@@ -208,6 +234,7 @@
         let draggedKey = null;
         let draggedKeyRect = null;
         let draggedProject = null;
+        let projectToDelete = null;
 
         async function fetchProjects() {
             try {
@@ -629,31 +656,53 @@
             }
         }
 
-        async function deleteProject(projectId, event) {
-            if (event) {
-                event.stopPropagation();
-            }
-            if (!confirm('Are you sure you want to delete this project and unlink all its keys?')) {
-                return;
-            }
+        function showDeleteProjectModal(projectId) {
+            projectToDelete = projectId;
+            document.getElementById('delete-project-modal').classList.add('show');
+        }
 
+        function hideDeleteProjectModal() {
+            document.getElementById('delete-project-modal').classList.remove('show');
+            projectToDelete = null;
+        }
+
+        async function executeProjectDelete(deleteKeys) {
             try {
-                const response = await fetch(`/projects/${projectId}`, {
+                const response = await fetch(`/projects/${projectToDelete}?delete_keys=${deleteKeys}`, {
                     method: 'DELETE'
                 });
 
                 if (!response.ok) {
-                    throw new Error('Failed to delete project');
+                    const error = await response.json();
+                    throw new Error(error.error || 'Failed to delete project');
                 }
 
-                if (selectedProject === projectId) {
+                const responseData = await response.json();
+                
+                // Show a notification with what happened
+                const notification = document.createElement('div');
+                notification.className = 'clear-notification';
+                notification.textContent = `Project deleted. ${responseData.keys_affected} keys ${responseData.action}.`;
+                document.body.appendChild(notification);
+                setTimeout(() => notification.remove(), 3000);
+
+                if (selectedProject === projectToDelete) {
                     showAllKeys();
                 }
                 fetchProjects();
+                hideDeleteProjectModal();
             } catch (error) {
                 console.error('Error deleting project:', error);
                 alert(error.message);
+                hideDeleteProjectModal();
             }
+        }
+
+        async function deleteProject(projectId, event) {
+            if (event) {
+                event.stopPropagation();
+            }
+            showDeleteProjectModal(projectId);
         }
 
         function copyToClipboard(text) {
@@ -1132,7 +1181,59 @@
     </script>
 
     <style>
-        /* All styles have been moved to styles.css */
+        .delete-project-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 16px;
+            color: var(--danger);
+        }
+
+        .delete-project-content {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .delete-project-message {
+            font-size: 1rem;
+            color: var(--text);
+            margin: 8px 0;
+        }
+
+        .delete-options {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .delete-options .btn {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            width: 100%;
+            justify-content: center;
+            padding: 12px;
+            font-size: 1rem;
+        }
+
+        .btn-danger {
+            background-color: var(--danger);
+            color: white;
+        }
+
+        .btn-danger:hover {
+            background-color: var(--danger-hover);
+        }
+
+        .btn-warning {
+            background-color: var(--warning);
+            color: white;
+        }
+
+        .btn-warning:hover {
+            background-color: var(--warning-hover);
+        }
     </style>
 </body>
 </html>

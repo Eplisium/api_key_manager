@@ -217,9 +217,32 @@ def create_project():
 def delete_project(project_id):
     try:
         project = Project.query.get_or_404(project_id)
+        
+        # Get delete_keys parameter from query string, default to False
+        delete_keys = request.args.get('delete_keys', 'false').lower() == 'true'
+        
+        # Count associated keys before any deletion
+        associated_keys_count = APIKey.query.filter_by(project_id=project_id).count()
+        
+        if delete_keys:
+            # Delete all associated keys first
+            APIKey.query.filter_by(project_id=project_id).delete()
+            logger.info(f"Deleted {associated_keys_count} keys associated with project {project_id}")
+        else:
+            # If not deleting keys, unassign them from the project
+            APIKey.query.filter_by(project_id=project_id).update({APIKey.project_id: None})
+            logger.info(f"Unassigned {associated_keys_count} keys from project {project_id}")
+        
+        # Delete the project
         db.session.delete(project)
         db.session.commit()
-        return jsonify({'message': 'Project deleted'}), 200
+        
+        response_message = {
+            'message': 'Project deleted successfully',
+            'keys_affected': associated_keys_count,
+            'action': 'deleted' if delete_keys else 'unassigned'
+        }
+        return jsonify(response_message), 200
     except Exception as e:
         db.session.rollback()
         logger.error(f"Error deleting project: {str(e)}")
