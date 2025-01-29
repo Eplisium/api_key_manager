@@ -13,24 +13,31 @@
                 <h2 class="font-semibold">Projects</h2>
                 <button class="btn btn-primary btn-sm" onclick="showProjectModal()">New Project</button>
             </div>
+            <button class="btn btn-icon w-full collapsed-new-project" onclick="showProjectModal()">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                <span>New Project</span>
+                <div class="project-tooltip">New Project</div>
+            </button>
             <button class="btn btn-icon w-full mb-4" onclick="showAllKeys()">
                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-list"><line x1="8" x2="21" y1="6" y2="6"/><line x1="8" x2="21" y1="12" y2="12"/><line x1="8" x2="21" y1="18" y2="18"/><line x1="3" x2="3.01" y1="6" y2="6"/><line x1="3" x2="3.01" y1="12" y2="12"/><line x1="3" x2="3.01" y1="18" y2="18"/></svg>
                 <span>Show All</span>
                 <div class="project-tooltip">Show All Keys</div>
             </button>
         </div>
-        <button class="theme-toggle" id="theme-toggle" title="Toggle theme">
+        <button class="theme-toggle" id="theme-toggle">
             <svg id="theme-toggle-dark-icon" class="hidden" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></svg>
             <svg id="theme-toggle-light-icon" class="hidden" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="m4.93 4.93 1.41 1.41"/><path d="m17.66 17.66 1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="m6.34 17.66-1.41 1.41"/><path d="m19.07 4.93-1.41 1.41"/></svg>
+            <div class="project-tooltip">Toggle Theme</div>
         </button>
         <div class="theme-separator"></div>
         <div class="projects-container">
             <div id="projects-list"></div>
         </div>
         <div class="theme-separator"></div>
-        <button class="clear-all-btn" onclick="confirmClearAllKeys()" title="Clear All Keys">
+        <button class="clear-all-btn" onclick="confirmClearAllKeys()">
             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/><line x1="10" x2="10" y1="11" y2="17"/><line x1="14" x2="14" y1="11" y2="17"/></svg>
             <span>Clear All Keys</span>
+            <div class="project-tooltip">Clear All Keys</div>
         </button>
         <button id="toggle-sidebar" class="toggle-sidebar" onclick="toggleSidebar()">
             <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
@@ -39,7 +46,7 @@
 
     <div class="main-content" id="main-content">
         <header class="header">
-            <h1 class="title">API Key Manager</h1>
+            <h1 class="title">API <span class="key-text" onclick="toggleRainbow(event)">Key</span> Manager</h1>
             <div class="header-actions">
                 <input type="file" id="env-file-input" accept=".env,.json,.yaml,.yml,.properties,.conf,.config" style="display: none" onchange="handleEnvFileUpload(event)">
                 <div class="dropdown" style="margin-right: 8px;">
@@ -209,7 +216,7 @@
                 <h2 class="text-xl font-semibold">Delete Project</h2>
             </div>
             <div class="delete-project-content">
-                <p class="delete-project-message">What would you like to do with the project and its associated keys?</p>
+                <p class="delete-project-message">What would you like to do with "<span id="project-name-display"></span>" and its associated keys?</p>
                 <div class="delete-options">
                     <button class="btn btn-danger" onclick="executeProjectDelete(true)">
                         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/></svg>
@@ -227,6 +234,98 @@
         </div>
     </div>
 
+    <!-- Add this right after the delete-project-modal div -->
+    <div id="project-context-menu" class="context-menu">
+        <button class="context-menu-item" onclick="editProjectFromMenu(event)">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/><path d="m15 5 4 4"/></svg>
+            Edit Project
+        </button>
+        <button class="context-menu-item destructive" onclick="deleteProjectFromMenu(event)">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>
+            Delete Project
+        </button>
+    </div>
+
+    <!-- Add this after the project-context-menu div -->
+    <div id="key-context-menu" class="context-menu">
+        <div class="key-context-value"></div>
+        <button class="context-menu-item" onclick="copyKeyFromMenu(event)">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>
+            Copy Key
+        </button>
+    </div>
+
+    <!-- Color Picker Modal -->
+    <div id="color-picker-modal" class="modal">
+        <div class="modal-content color-picker">
+            <div class="modal-header">
+                <h2>Custom Title Color</h2>
+                <button class="close-button" onclick="hideColorPickerModal()">×</button>
+            </div>
+            <div class="modal-body">
+                <div class="color-picker-container">
+                    <div class="color-picker-section">
+                        <label>Apply Color To</label>
+                        <div class="word-selector">
+                            <button class="word-select-btn active" data-word="all">Entire Title</button>
+                            <button class="word-select-btn" data-word="api">API</button>
+                            <button class="word-select-btn" data-word="key">Key</button>
+                            <button class="word-select-btn" data-word="manager">Manager</button>
+                        </div>
+                    </div>
+                    <div class="color-picker-section">
+                        <label>Color Wheel</label>
+                        <input type="color" id="color-wheel" class="color-wheel">
+                    </div>
+                    <div class="color-picker-section">
+                        <label>HEX Color</label>
+                        <div class="hex-input-container">
+                            <span class="hex-prefix">#</span>
+                            <input type="text" id="hex-color" class="hex-input" maxlength="6" placeholder="000000">
+                        </div>
+                    </div>
+                    <div class="color-picker-section">
+                        <label>RGB Values</label>
+                        <div class="rgb-inputs">
+                            <div class="rgb-input-group">
+                                <label>R</label>
+                                <input type="number" id="rgb-r" min="0" max="255" class="rgb-input" placeholder="0">
+                            </div>
+                            <div class="rgb-input-group">
+                                <label>G</label>
+                                <input type="number" id="rgb-g" min="0" max="255" class="rgb-input" placeholder="0">
+                            </div>
+                            <div class="rgb-input-group">
+                                <label>B</label>
+                                <input type="number" id="rgb-b" min="0" max="255" class="rgb-input" placeholder="0">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="color-preview-section">
+                        <label>Preview</label>
+                        <div class="preview-text">
+                            <span class="preview-api">API</span>
+                            <span class="preview-key">Key</span>
+                            <span class="preview-manager">Manager</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <div class="modal-footer-left">
+                    <button class="btn btn-icon btn-reset" onclick="resetTitleColor()">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>
+                        Reset
+                    </button>
+                </div>
+                <div class="modal-footer-right">
+                    <button class="btn btn-secondary" onclick="hideColorPickerModal()">Cancel</button>
+                    <button class="btn btn-primary" onclick="applyCustomColor()">Apply Color</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <script>
         let isEditMode = false;
         let selectedProject = null;
@@ -235,6 +334,123 @@
         let draggedKeyRect = null;
         let draggedProject = null;
         let projectToDelete = null;
+
+        // Add these new functions for context menu
+        let activeProjectId = null;
+
+        function showContextMenu(event, projectId) {
+            event.preventDefault();
+            event.stopPropagation();
+            
+            const contextMenu = document.getElementById('project-context-menu');
+            const projectItem = event.currentTarget;
+            const projectName = projectItem.querySelector('.project-name').textContent;
+            activeProjectId = projectId;
+            
+            // If sidebar is collapsed, show project name in context menu
+            if (document.getElementById('sidebar').classList.contains('collapsed')) {
+                // Hide tooltip
+                const tooltip = projectItem.querySelector('.project-tooltip');
+                if (tooltip) tooltip.style.display = 'none';
+                
+                // Add project name to context menu if not already present
+                let projectNameDisplay = contextMenu.querySelector('.project-context-name');
+                if (!projectNameDisplay) {
+                    projectNameDisplay = document.createElement('div');
+                    projectNameDisplay.className = 'project-context-name';
+                    contextMenu.insertBefore(projectNameDisplay, contextMenu.firstChild);
+                }
+                projectNameDisplay.textContent = projectName;
+            }
+            
+            // Position the menu at cursor
+            contextMenu.style.left = `${event.clientX}px`;
+            contextMenu.style.top = `${event.clientY}px`;
+            contextMenu.classList.add('show');
+            
+            // Add click listener to close menu when clicking outside
+            document.addEventListener('click', hideContextMenu);
+            document.addEventListener('contextmenu', hideContextMenu);
+        }
+
+        function hideContextMenu() {
+            const contextMenu = document.getElementById('project-context-menu');
+            contextMenu.classList.remove('show');
+            activeProjectId = null;
+            
+            // Remove project name from context menu
+            const projectNameDisplay = contextMenu.querySelector('.project-context-name');
+            if (projectNameDisplay) {
+                projectNameDisplay.remove();
+            }
+            
+            // Show all tooltips again
+            document.querySelectorAll('.project-tooltip').forEach(tooltip => {
+                tooltip.style.display = '';
+            });
+            
+            // Remove click listeners
+            document.removeEventListener('click', hideContextMenu);
+            document.removeEventListener('contextmenu', hideContextMenu);
+        }
+
+        function editProjectFromMenu(event) {
+            event.preventDefault();
+            if (activeProjectId !== null) {
+                editProject(activeProjectId);
+            }
+            hideContextMenu();
+        }
+
+        function deleteProjectFromMenu(event) {
+            event.preventDefault();
+            if (activeProjectId !== null) {
+                deleteProject(activeProjectId);
+            }
+            hideContextMenu();
+        }
+
+        // Add these new functions for key context menu
+        let activeKeyValue = null;
+
+        function showKeyContextMenu(event, keyValue) {
+            event.preventDefault();
+            event.stopPropagation();
+            
+            const contextMenu = document.getElementById('key-context-menu');
+            activeKeyValue = keyValue;
+            
+            // Update the key value display
+            const keyDisplay = contextMenu.querySelector('.key-context-value');
+            keyDisplay.textContent = keyValue;
+            
+            // Position the menu at cursor
+            contextMenu.style.left = `${event.clientX}px`;
+            contextMenu.style.top = `${event.clientY}px`;
+            contextMenu.classList.add('show');
+            
+            // Add click listener to close menu when clicking outside
+            document.addEventListener('click', hideKeyContextMenu);
+            document.addEventListener('contextmenu', hideKeyContextMenu);
+        }
+
+        function hideKeyContextMenu() {
+            const contextMenu = document.getElementById('key-context-menu');
+            contextMenu.classList.remove('show');
+            activeKeyValue = null;
+            
+            // Remove click listeners
+            document.removeEventListener('click', hideKeyContextMenu);
+            document.removeEventListener('contextmenu', hideKeyContextMenu);
+        }
+
+        function copyKeyFromMenu(event) {
+            event.preventDefault();
+            if (activeKeyValue !== null) {
+                copyToClipboard(activeKeyValue);
+            }
+            hideKeyContextMenu();
+        }
 
         async function fetchProjects() {
             try {
@@ -258,7 +474,8 @@
                      ondragover="handleProjectDragOver(event)"
                      ondrop="handleProjectDrop(event)"
                      ondragend="handleProjectDragEnd(event)"
-                     onclick="selectProject(${project.id})">
+                     onclick="selectProject(${project.id})"
+                     oncontextmenu="showContextMenu(event, ${project.id})">
                     <div class="project-info">
                         <span class="project-name">${project.name}</span>
                         <div class="project-tooltip">${project.name}</div>
@@ -322,14 +539,15 @@
                      data-key-id="${key.id}" 
                      draggable="true" 
                      ondragstart="handleDragStart(event, ${key.id})"
-                     ondragend="handleDragEnd(event)">
+                     ondragend="handleDragEnd(event)"
+                     oncontextmenu="showKeyContextMenu(event, '${key.key.replace(/'/g, "\\'")}')">
                     <div class="flex justify-between items-start mb-4">
                         <div>
                             <h3 class="font-semibold">${key.name}</h3>
                             <div class="text-xs text-gray-500 mb-1">Project: ${key.project ? key.project.name : 'None'}</div>
                         </div>
                         <div class="flex gap-2">
-                            <button onclick="copyToClipboard('${key.key}')" class="btn-icon">
+                            <button onclick="copyToClipboard('${key.key.replace(/'/g, "\\'")}')" class="btn-icon">
                                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-copy"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>
                                 <span>Copy</span>
                             </button>
@@ -658,6 +876,12 @@
 
         function showDeleteProjectModal(projectId) {
             projectToDelete = projectId;
+            const projectName = document.querySelector(`.project-item[data-project-id="${projectId}"] .project-name`).textContent;
+            
+            // Update the modal message with project name
+            document.querySelector('.delete-project-message').textContent = 
+                `What would you like to do with "${projectName}" and its associated keys?`;
+            
             document.getElementById('delete-project-modal').classList.add('show');
         }
 
@@ -772,6 +996,12 @@
         document.addEventListener('DOMContentLoaded', async () => {
             console.log('Page loaded, initializing...');
             await fetchProjects();
+            
+            // Restore rainbow state
+            const titleRainbow = localStorage.getItem('titleRainbow') === 'true';
+            if (titleRainbow) {
+                document.querySelector('.title').classList.add('rainbow');
+            }
             
             // Restore selected project from localStorage
             const savedProject = localStorage.getItem('selectedProject');
@@ -1178,6 +1408,247 @@
                 draggedProject = null;
             }
         }
+
+        // Update the title structure to support individual word coloring
+        document.querySelector('.title').innerHTML = '<span class="title-api">API</span> <span class="title-key">Key</span> <span class="title-manager">Manager</span>';
+
+        // Update click handlers for rainbow effect - only on "Key"
+        document.querySelector('.title-key').addEventListener('click', (event) => {
+            if (event.shiftKey) {
+                const title = document.querySelector('.title');
+                title.classList.toggle('rainbow');
+                
+                // Remove any custom colors when rainbow is active
+                if (title.classList.contains('rainbow')) {
+                    document.querySelectorAll('.title span').forEach(span => {
+                        span.style.color = '';
+                        // Clear saved colors when rainbow is enabled
+                        localStorage.removeItem(`titleColor_${span.className.split('-')[1]}`);
+                    });
+                }
+                
+                // Save rainbow state
+                localStorage.setItem('titleRainbow', title.classList.contains('rainbow'));
+            }
+        });
+
+        // Add right-click handler for the "Key" text only
+        document.querySelector('.title-key').addEventListener('contextmenu', (event) => {
+            if (event.shiftKey) {
+                event.preventDefault();
+                showColorPickerModal(event);
+            }
+        });
+
+        // Initialize title state on page load
+        document.addEventListener('DOMContentLoaded', () => {
+            // Restore rainbow effect if it was active
+            const wasRainbow = localStorage.getItem('titleRainbow') === 'true';
+            if (wasRainbow) {
+                const title = document.querySelector('.title');
+                title.classList.add('rainbow');
+                // Clear any saved colors
+                document.querySelectorAll('.title span').forEach(span => {
+                    span.style.color = '';
+                    localStorage.removeItem(`titleColor_${span.className.split('-')[1]}`);
+                });
+            } else {
+                // Restore individual word colors if rainbow was not active
+                ['api', 'key', 'manager'].forEach(word => {
+                    const savedColor = localStorage.getItem(`titleColor_${word}`);
+                    if (savedColor) {
+                        document.querySelector(`.title-${word}`).style.color = savedColor;
+                    }
+                });
+            }
+        });
+
+        function resetTitleColor() {
+            // Remove any custom colors and rainbow effect
+            const title = document.querySelector('.title');
+            title.classList.remove('rainbow');
+            document.querySelectorAll('.title span').forEach(span => {
+                span.style.color = '';
+                localStorage.removeItem(`titleColor_${span.className.split('-')[1]}`);
+            });
+            localStorage.setItem('titleRainbow', 'false');
+
+            // Reset color picker inputs to default color (#000000 for light mode, #FFFFFF for dark mode)
+            const defaultColor = document.documentElement.getAttribute('data-theme') === 'dark' ? '#FFFFFF' : '#000000';
+            document.getElementById('color-wheel').value = defaultColor;
+            document.getElementById('hex-color').value = defaultColor.substring(1);
+            const rgb = hexToRgb(defaultColor);
+            document.getElementById('rgb-r').value = rgb.r;
+            document.getElementById('rgb-g').value = rgb.g;
+            document.getElementById('rgb-b').value = rgb.b;
+
+            // Update preview
+            document.querySelectorAll('.preview-text span').forEach(span => {
+                span.style.color = defaultColor;
+            });
+        }
+
+        let selectedWord = 'all';
+
+        function showColorPickerModal(event) {
+            if (event) {
+                event.preventDefault();
+            }
+            const modal = document.getElementById('color-picker-modal');
+            modal.classList.add('show');
+            
+            // Initialize with current color or default
+            const currentColor = localStorage.getItem('customTitleColor') || '#000000';
+            initializeColorPicker(currentColor);
+
+            // Reset word selection to 'all'
+            selectedWord = 'all';
+            document.querySelectorAll('.word-select-btn').forEach(btn => {
+                btn.classList.toggle('active', btn.dataset.word === 'all');
+            });
+        }
+
+        function hideColorPickerModal() {
+            document.getElementById('color-picker-modal').classList.remove('show');
+        }
+
+        function initializeColorPicker(color) {
+            // Remove rainbow effect if active
+            document.querySelector('.title').classList.remove('rainbow');
+            localStorage.setItem('titleRainbow', 'false');
+
+            // Set initial values
+            document.getElementById('color-wheel').value = color;
+            document.getElementById('hex-color').value = color.substring(1);
+            
+            // Convert hex to RGB
+            const rgb = hexToRgb(color);
+            document.getElementById('rgb-r').value = rgb.r;
+            document.getElementById('rgb-g').value = rgb.g;
+            document.getElementById('rgb-b').value = rgb.b;
+
+            // Update preview
+            updatePreviewColors();
+        }
+
+        function hexToRgb(hex) {
+            const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+            return result ? {
+                r: parseInt(result[1], 16),
+                g: parseInt(result[2], 16),
+                b: parseInt(result[3], 16)
+            } : null;
+        }
+
+        function rgbToHex(r, g, b) {
+            return '#' + [r, g, b].map(x => {
+                const hex = x.toString(16);
+                return hex.length === 1 ? '0' + hex : hex;
+            }).join('');
+        }
+
+        function updatePreviewColors() {
+            const color = document.getElementById('color-wheel').value;
+            if (selectedWord === 'all') {
+                document.querySelectorAll('.preview-text span').forEach(span => {
+                    span.style.color = color;
+                });
+            } else {
+                document.querySelector(`.preview-${selectedWord}`).style.color = color;
+            }
+        }
+
+        function applyCustomColor() {
+            const color = document.getElementById('color-wheel').value;
+            const title = document.querySelector('.title');
+            
+            // Remove rainbow effect
+            title.classList.remove('rainbow');
+            localStorage.setItem('titleRainbow', 'false');
+
+            if (selectedWord === 'all') {
+                document.querySelectorAll('.title span').forEach(span => {
+                    span.style.color = color;
+                    localStorage.setItem(`titleColor_${span.className.split('-')[1]}`, color);
+                });
+            } else {
+                const targetSpan = document.querySelector(`.title-${selectedWord}`);
+                targetSpan.style.color = color;
+                localStorage.setItem(`titleColor_${selectedWord}`, color);
+            }
+
+            hideColorPickerModal();
+        }
+
+        // Restore custom colors on page load
+        document.addEventListener('DOMContentLoaded', () => {
+            ['api', 'key', 'manager'].forEach(word => {
+                const savedColor = localStorage.getItem(`titleColor_${word}`);
+                if (savedColor) {
+                    document.querySelector(`.title-${word}`).style.color = savedColor;
+                }
+            });
+        });
+
+        // Add event listeners for word selection buttons
+        document.querySelectorAll('.word-select-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.word-select-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                selectedWord = btn.dataset.word;
+                
+                // Update preview with current colors
+                updatePreviewColors();
+            });
+        });
+
+        // Add event listeners for color inputs
+        document.getElementById('color-wheel').addEventListener('input', (e) => {
+            const color = e.target.value;
+            document.getElementById('hex-color').value = color.substring(1);
+            const rgb = hexToRgb(color);
+            document.getElementById('rgb-r').value = rgb.r;
+            document.getElementById('rgb-g').value = rgb.g;
+            document.getElementById('rgb-b').value = rgb.b;
+            updateColorPreview(color);
+        });
+
+        document.getElementById('hex-color').addEventListener('input', (e) => {
+            let hex = e.target.value;
+            if (hex.length === 6) {
+                const color = '#' + hex;
+                document.getElementById('color-wheel').value = color;
+                const rgb = hexToRgb(color);
+                document.getElementById('rgb-r').value = rgb.r;
+                document.getElementById('rgb-g').value = rgb.g;
+                document.getElementById('rgb-b').value = rgb.b;
+                updateColorPreview(color);
+            }
+        });
+
+        function handleRgbInput() {
+            const r = document.getElementById('rgb-r').value;
+            const g = document.getElementById('rgb-g').value;
+            const b = document.getElementById('rgb-b').value;
+            if (r && g && b) {
+                const color = rgbToHex(Number(r), Number(g), Number(b));
+                document.getElementById('color-wheel').value = color;
+                document.getElementById('hex-color').value = color.substring(1);
+                updateColorPreview(color);
+            }
+        }
+
+        document.getElementById('rgb-r').addEventListener('input', handleRgbInput);
+        document.getElementById('rgb-g').addEventListener('input', handleRgbInput);
+        document.getElementById('rgb-b').addEventListener('input', handleRgbInput);
+
+        // Add right-click handler for the title
+        document.querySelector('.title').addEventListener('contextmenu', (event) => {
+            if (event.shiftKey) {
+                event.preventDefault();
+                showColorPickerModal(event);
+            }
+        });
     </script>
 
     <style>

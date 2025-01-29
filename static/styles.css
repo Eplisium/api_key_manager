@@ -379,7 +379,9 @@ select.input-field option {
 }
 
 .sidebar.collapsed .project-item:hover .project-tooltip,
-.sidebar.collapsed .btn-icon.w-full:hover .project-tooltip {
+.sidebar.collapsed .btn-icon.w-full:hover .project-tooltip,
+.sidebar.collapsed .theme-toggle:hover .project-tooltip,
+.sidebar.collapsed .clear-all-btn:hover .project-tooltip {
   display: block;
   opacity: 1;
 }
@@ -987,4 +989,476 @@ select.input-field option {
 
 .show {
     display: block;
+}
+
+.context-menu {
+    position: fixed;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 0.375rem;
+    padding: 0.5rem;
+    min-width: 160px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+    z-index: 1000;
+    display: none;
+}
+
+.context-menu.show {
+    display: block;
+}
+
+.context-menu-item {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem;
+    width: 100%;
+    border: none;
+    background: none;
+    color: var(--foreground);
+    cursor: pointer;
+    border-radius: 0.25rem;
+    font-size: 0.875rem;
+}
+
+.context-menu-item:hover {
+    background-color: var(--hover);
+}
+
+.context-menu-item.destructive {
+    color: var(--destructive);
+}
+
+.context-menu-item.destructive:hover {
+    background-color: hsl(0, 84.2%, 60.2%, 0.1);
+}
+
+.context-menu-item svg {
+    width: 16px;
+    height: 16px;
+}
+
+/* Ensure context menu is positioned correctly when sidebar is collapsed */
+.sidebar.collapsed .project-item:hover .context-menu {
+    left: 45px !important;
+}
+
+.key-context-value {
+    padding: 0.5rem;
+    margin-bottom: 0.5rem;
+    background: var(--hover);
+    border-radius: 0.25rem;
+    font-family: monospace;
+    font-size: 0.875rem;
+    word-break: break-all;
+    color: var(--foreground);
+    border: 1px solid var(--border);
+    max-width: 300px;
+}
+
+.project-context-name {
+    padding: 0.5rem;
+    margin-bottom: 0.5rem;
+    background: var(--hover);
+    border-radius: 0.25rem;
+    font-weight: 500;
+    font-size: 0.875rem;
+    color: var(--foreground);
+    border: 1px solid var(--border);
+    text-align: center;
+}
+
+.collapsed-new-project {
+    display: none;
+}
+
+.sidebar.collapsed .collapsed-new-project {
+    display: flex;
+    padding: 0.375rem;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    margin: 0.5rem auto;
+    border-radius: 0.375rem;
+    background: transparent;
+}
+
+.sidebar.collapsed .collapsed-new-project:hover {
+    background-color: var(--border);
+}
+
+.sidebar.collapsed .collapsed-new-project span {
+    display: none;
+}
+
+.sidebar.collapsed .collapsed-new-project svg {
+    margin: 0;
+}
+
+@keyframes rainbow {
+    0% { color: #ff0000; }
+    14% { color: #ff7f00; }
+    28% { color: #ffff00; }
+    42% { color: #00ff00; }
+    56% { color: #0000ff; }
+    70% { color: #4b0082; }
+    84% { color: #8f00ff; }
+    100% { color: #ff0000; }
+}
+
+/* Remove individual span animations and apply to title only */
+.title.rainbow,
+.title.rainbow .title-api,
+.title.rainbow .title-key,
+.title.rainbow .title-manager {
+    animation: rainbow 3s linear infinite;
+    /* Ensure all spans start at the same point in the animation */
+    animation-delay: 0s;
+}
+
+/* Override any individual span colors when rainbow is active */
+.title.rainbow span {
+    color: inherit !important;
+    transition: none !important;
+}
+
+.title span {
+    transition: color 0.2s ease;
+}
+
+.key-text {
+    cursor: pointer;
+    transition: opacity 0.2s ease;
+}
+
+.key-text:hover {
+    opacity: 0.8;
+}
+
+/* Color Picker Modal Styles */
+.modal-content.color-picker {
+    max-width: 320px;
+    width: 95%;
+    background: var(--background);
+    border: 1px solid var(--border);
+    box-shadow: 0 4px 24px rgba(0, 0, 0, 0.2);
+    border-radius: 12px;
+    overflow: hidden;
+}
+
+.color-picker-container {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.color-picker .modal-header {
+    background: var(--card);
+    padding: 0.75rem 1rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-bottom: 1px solid var(--border);
+}
+
+.color-picker .modal-header h2 {
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--foreground);
+    margin: 0;
+}
+
+.color-picker .close-button {
+    width: 24px;
+    height: 24px;
+    border-radius: 4px;
+    border: 1px solid var(--border);
+    background: var(--background);
+    color: var(--foreground);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    padding: 0;
+    font-size: 1rem;
+    line-height: 1;
+}
+
+.modal-body {
+    padding: 1rem;
+    background: var(--background);
+}
+
+.color-picker-section {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 0.75rem;
+}
+
+.color-picker-section + .color-picker-section {
+    margin-top: 0.625rem;
+}
+
+.color-picker-section label {
+    display: block;
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--foreground);
+    margin-bottom: 0.5rem;
+    opacity: 0.8;
+}
+
+.word-selector {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0.375rem;
+}
+
+.word-select-btn {
+    padding: 0.5rem;
+    border: 1px solid var(--border);
+    background: var(--background);
+    color: var(--foreground);
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 0.75rem;
+    transition: all 0.2s ease;
+    text-align: center;
+    font-weight: 500;
+}
+
+.word-select-btn:hover {
+    background: var(--hover);
+    border-color: var(--border-hover);
+}
+
+.word-select-btn:active {
+    transform: translateY(1px);
+}
+
+.word-select-btn.active {
+    background: var(--primary);
+    color: white;
+    border-color: var(--primary);
+}
+
+.word-select-btn.active:hover {
+    background: var(--primary-hover);
+}
+
+[data-theme="dark"] .word-select-btn {
+    background: var(--card);
+}
+
+[data-theme="dark"] .word-select-btn:hover {
+    background: var(--hover);
+}
+
+[data-theme="dark"] .word-select-btn.active {
+    background: var(--primary);
+}
+
+[data-theme="dark"] .word-select-btn.active:hover {
+    background: var(--primary-hover);
+}
+
+.color-wheel {
+    width: 100%;
+    height: 32px;
+    border-radius: 4px;
+    border: 1px solid var(--border);
+    cursor: pointer;
+    transition: all 0.2s ease;
+    padding: 0;
+}
+
+.hex-input-container {
+    background: var(--background);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 0.5rem 0.625rem;
+    display: flex;
+    align-items: center;
+}
+
+.hex-prefix {
+    color: var(--foreground);
+    font-family: monospace;
+    font-size: 0.75rem;
+    margin-right: 0.25rem;
+    opacity: 0.7;
+}
+
+.hex-input {
+    background: none;
+    border: none;
+    color: var(--foreground);
+    font-family: monospace;
+    font-size: 0.75rem;
+    width: 100%;
+    outline: none;
+}
+
+.rgb-inputs {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 0.5rem;
+}
+
+.rgb-input-group label {
+    display: block;
+    font-size: 0.675rem;
+    font-weight: 500;
+    margin-bottom: 0.25rem;
+    opacity: 0.7;
+}
+
+.rgb-input {
+    width: 100%;
+    padding: 0.5rem;
+    text-align: center;
+    background: var(--background);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    color: var(--foreground);
+    font-family: monospace;
+    font-size: 0.75rem;
+}
+
+.color-preview-section {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 0.75rem;
+}
+
+.preview-text {
+    display: flex;
+    gap: 0.375rem;
+    justify-content: center;
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: var(--foreground);
+}
+
+.color-picker .modal-footer {
+    background: var(--card);
+    padding: 0.75rem 1rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-top: 1px solid var(--border);
+}
+
+.btn-reset {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.375rem;
+    color: var(--foreground);
+    background: var(--background);
+    border: 1px solid var(--border);
+    padding: 0.375rem 0.625rem;
+    border-radius: 4px;
+    font-size: 0.75rem;
+    font-weight: 500;
+}
+
+.btn-reset svg {
+    width: 14px;
+    height: 14px;
+}
+
+.modal-footer-right .btn {
+    padding: 0.375rem 0.75rem;
+    font-size: 0.75rem;
+    border-radius: 4px;
+    min-height: 28px;
+}
+
+/* Dark mode enhancements */
+[data-theme="dark"] .color-picker-section,
+[data-theme="dark"] .color-preview-section {
+    background: var(--background);
+}
+
+[data-theme="dark"] .word-select-btn {
+    background: var(--card);
+}
+
+[data-theme="dark"] .rgb-input,
+[data-theme="dark"] .hex-input-container {
+    background: var(--card);
+}
+
+.title-key {
+    cursor: pointer;
+    position: relative;
+    transition: all 0.2s ease;
+}
+
+.title-key:hover {
+    opacity: 0.8;
+    text-shadow: 0 0 8px rgba(var(--primary-rgb), 0.4);
+}
+
+.title-key::after {
+    content: '⇧ + Click';
+    position: absolute;
+    bottom: -20px;
+    left: 50%;
+    transform: translateX(-50%) translateY(10px);
+    background: var(--card);
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 12px;
+    color: var(--muted);
+    opacity: 0;
+    transition: all 0.2s ease;
+    pointer-events: none;
+    border: 1px solid var(--border);
+    white-space: nowrap;
+}
+
+.title-key:hover::after {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+}
+
+/* Color Picker Modal Styles */
+.modal-content.color-picker {
+    max-width: 400px;
+    width: 95%;
+    background: var(--background);
+    border: 1px solid var(--border);
+    box-shadow: 0 4px 24px rgba(0, 0, 0, 0.2);
+    border-radius: 12px;
+    overflow: hidden;
+}
+
+.color-picker .modal-header {
+    background: var(--card);
+    padding: 1rem 1.25rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-bottom: 1px solid var(--border);
+}
+
+.color-picker .modal-footer {
+    background: var(--card);
+    padding: 1rem 1.25rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-top: 1px solid var(--border);
+}
+
+.modal-body {
+    padding: 1.25rem;
+}
+
+[data-theme="dark"] .title-key:hover {
+    text-shadow: 0 0 12px rgba(var(--primary-rgb), 0.6);
 }
