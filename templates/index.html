@@ -227,6 +227,27 @@
         </div>
     </div>
 
+    <!-- Add this right after the delete-project-modal div -->
+    <div id="project-context-menu" class="context-menu">
+        <button class="context-menu-item" onclick="editProjectFromMenu(event)">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/><path d="m15 5 4 4"/></svg>
+            Edit Project
+        </button>
+        <button class="context-menu-item destructive" onclick="deleteProjectFromMenu(event)">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>
+            Delete Project
+        </button>
+    </div>
+
+    <!-- Add this after the project-context-menu div -->
+    <div id="key-context-menu" class="context-menu">
+        <div class="key-context-value"></div>
+        <button class="context-menu-item" onclick="copyKeyFromMenu(event)">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>
+            Copy Key
+        </button>
+    </div>
+
     <script>
         let isEditMode = false;
         let selectedProject = null;
@@ -235,6 +256,123 @@
         let draggedKeyRect = null;
         let draggedProject = null;
         let projectToDelete = null;
+
+        // Add these new functions for context menu
+        let activeProjectId = null;
+
+        function showContextMenu(event, projectId) {
+            event.preventDefault();
+            event.stopPropagation();
+            
+            const contextMenu = document.getElementById('project-context-menu');
+            const projectItem = event.currentTarget;
+            const projectName = projectItem.querySelector('.project-name').textContent;
+            activeProjectId = projectId;
+            
+            // If sidebar is collapsed, show project name in context menu
+            if (document.getElementById('sidebar').classList.contains('collapsed')) {
+                // Hide tooltip
+                const tooltip = projectItem.querySelector('.project-tooltip');
+                if (tooltip) tooltip.style.display = 'none';
+                
+                // Add project name to context menu if not already present
+                let projectNameDisplay = contextMenu.querySelector('.project-context-name');
+                if (!projectNameDisplay) {
+                    projectNameDisplay = document.createElement('div');
+                    projectNameDisplay.className = 'project-context-name';
+                    contextMenu.insertBefore(projectNameDisplay, contextMenu.firstChild);
+                }
+                projectNameDisplay.textContent = projectName;
+            }
+            
+            // Position the menu at cursor
+            contextMenu.style.left = `${event.clientX}px`;
+            contextMenu.style.top = `${event.clientY}px`;
+            contextMenu.classList.add('show');
+            
+            // Add click listener to close menu when clicking outside
+            document.addEventListener('click', hideContextMenu);
+            document.addEventListener('contextmenu', hideContextMenu);
+        }
+
+        function hideContextMenu() {
+            const contextMenu = document.getElementById('project-context-menu');
+            contextMenu.classList.remove('show');
+            activeProjectId = null;
+            
+            // Remove project name from context menu
+            const projectNameDisplay = contextMenu.querySelector('.project-context-name');
+            if (projectNameDisplay) {
+                projectNameDisplay.remove();
+            }
+            
+            // Show all tooltips again
+            document.querySelectorAll('.project-tooltip').forEach(tooltip => {
+                tooltip.style.display = '';
+            });
+            
+            // Remove click listeners
+            document.removeEventListener('click', hideContextMenu);
+            document.removeEventListener('contextmenu', hideContextMenu);
+        }
+
+        function editProjectFromMenu(event) {
+            event.preventDefault();
+            if (activeProjectId !== null) {
+                editProject(activeProjectId);
+            }
+            hideContextMenu();
+        }
+
+        function deleteProjectFromMenu(event) {
+            event.preventDefault();
+            if (activeProjectId !== null) {
+                deleteProject(activeProjectId);
+            }
+            hideContextMenu();
+        }
+
+        // Add these new functions for key context menu
+        let activeKeyValue = null;
+
+        function showKeyContextMenu(event, keyValue) {
+            event.preventDefault();
+            event.stopPropagation();
+            
+            const contextMenu = document.getElementById('key-context-menu');
+            activeKeyValue = keyValue;
+            
+            // Update the key value display
+            const keyDisplay = contextMenu.querySelector('.key-context-value');
+            keyDisplay.textContent = keyValue;
+            
+            // Position the menu at cursor
+            contextMenu.style.left = `${event.clientX}px`;
+            contextMenu.style.top = `${event.clientY}px`;
+            contextMenu.classList.add('show');
+            
+            // Add click listener to close menu when clicking outside
+            document.addEventListener('click', hideKeyContextMenu);
+            document.addEventListener('contextmenu', hideKeyContextMenu);
+        }
+
+        function hideKeyContextMenu() {
+            const contextMenu = document.getElementById('key-context-menu');
+            contextMenu.classList.remove('show');
+            activeKeyValue = null;
+            
+            // Remove click listeners
+            document.removeEventListener('click', hideKeyContextMenu);
+            document.removeEventListener('contextmenu', hideKeyContextMenu);
+        }
+
+        function copyKeyFromMenu(event) {
+            event.preventDefault();
+            if (activeKeyValue !== null) {
+                copyToClipboard(activeKeyValue);
+            }
+            hideKeyContextMenu();
+        }
 
         async function fetchProjects() {
             try {
@@ -258,7 +396,8 @@
                      ondragover="handleProjectDragOver(event)"
                      ondrop="handleProjectDrop(event)"
                      ondragend="handleProjectDragEnd(event)"
-                     onclick="selectProject(${project.id})">
+                     onclick="selectProject(${project.id})"
+                     oncontextmenu="showContextMenu(event, ${project.id})">
                     <div class="project-info">
                         <span class="project-name">${project.name}</span>
                         <div class="project-tooltip">${project.name}</div>
@@ -322,14 +461,15 @@
                      data-key-id="${key.id}" 
                      draggable="true" 
                      ondragstart="handleDragStart(event, ${key.id})"
-                     ondragend="handleDragEnd(event)">
+                     ondragend="handleDragEnd(event)"
+                     oncontextmenu="showKeyContextMenu(event, '${key.key.replace(/'/g, "\\'")}')">
                     <div class="flex justify-between items-start mb-4">
                         <div>
                             <h3 class="font-semibold">${key.name}</h3>
                             <div class="text-xs text-gray-500 mb-1">Project: ${key.project ? key.project.name : 'None'}</div>
                         </div>
                         <div class="flex gap-2">
-                            <button onclick="copyToClipboard('${key.key}')" class="btn-icon">
+                            <button onclick="copyToClipboard('${key.key.replace(/'/g, "\\'")}')" class="btn-icon">
                                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-copy"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>
                                 <span>Copy</span>
                             </button>
@@ -658,6 +798,12 @@
 
         function showDeleteProjectModal(projectId) {
             projectToDelete = projectId;
+            const projectName = document.querySelector(`.project-item[data-project-id="${projectId}"] .project-name`).textContent;
+            
+            // Update the modal message with project name
+            document.querySelector('.delete-project-message').textContent = 
+                `What would you like to do with "${projectName}" and its associated keys?`;
+            
             document.getElementById('delete-project-modal').classList.add('show');
         }
 
