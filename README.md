@@ -46,6 +46,14 @@ A Flask-based web application for managing and organizing API keys with a modern
   - Automatic key name conflict resolution
   - Database migration error handling
   - Comprehensive error messages for debugging
+  - Unique constraint enforcement per project
+  - Automatic timestamp tracking for all records
+  - Secure file type validation during uploads
+  - Automatic database state recovery
+  - Transaction-based database operations
+  - Detailed activity logging with timestamps
+  - Configurable logging levels and formats
+  - Backup recommendations before destructive operations
 
 - **Import/Export Capabilities**
   - Import API keys from multiple file formats:
@@ -67,6 +75,10 @@ A Flask-based web application for managing and organizing API keys with a modern
     - KEY='value'
     - KEY="value"
     - Comments support (# or ; prefixed lines)
+  - Import directly from OS environment variables
+  - Post-import configuration interface for bulk editing
+  - Project-specific imports and exports
+  - Automatic file type validation during import
 
 - **Bulk Operations**
   - Set descriptions for multiple keys at once
@@ -74,6 +86,29 @@ A Flask-based web application for managing and organizing API keys with a modern
   - Clear descriptions for multiple keys
   - Delete all keys in a project
   - Batch update key configurations after import
+  - Clear all keys with confirmation dialog
+  - Bulk key removal with undo option
+
+- **UI Customization**
+  - Theme persistence across browser sessions
+  - Customizable title colors with color picker
+  - Individual word color customization
+  - Rainbow effect option for title
+  - Color customization memory across sessions
+  - Sidebar state persistence (expanded/collapsed)
+  - Interactive tooltips for UI elements
+  - Animated notifications and toasts
+  - Smooth transitions and animations
+  - Keyboard shortcuts support
+
+- **Project Management**
+  - Automatic position tracking for keys within projects
+  - Smart conflict resolution for duplicate key names
+  - Project-specific view modes
+  - Automatic project selection memory
+  - Project-specific import/export controls
+  - Visual feedback during drag operations
+  - Project-based filtering system
 
 ## Prerequisites
 
@@ -119,10 +154,21 @@ The application uses a simple configuration setup with the following defaults:
 - Database: SQLite (`keys.db` in the application directory)
 - Server: Runs on `localhost:5000`
 - Logging: Configured via `logging.conf`, outputs to `api_key_manager.log`
+- Database Features:
+  - Automatic timestamps for creation and updates
+  - Unique constraints per project
+  - Position tracking for ordered lists
+  - Relationship management between keys and projects
+  - Automatic cascade operations
+  - Transaction support with rollback capability
 
 To modify these settings, you can edit the following files:
 - `app.py`: Database URL and application settings
 - `logging.conf`: Logging configuration
+  - Log level control
+  - Log format customization
+  - Log rotation settings
+  - Separate loggers for different components
 
 ## Running the Application
 
