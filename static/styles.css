@@ -1164,6 +1164,9 @@ select.input-field option {
 }
 
 .key-context-value {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
     padding: 0.5rem;
     margin-bottom: 0.5rem;
     background: var(--hover);
@@ -1173,7 +1176,62 @@ select.input-field option {
     word-break: break-all;
     color: var(--foreground);
     border: 1px solid var(--border);
-    max-width: 300px;
+}
+
+.encrypted-key-header {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.password-input-container {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-top: 0.5rem;
+}
+
+.password-input {
+    flex: 1;
+    padding: 0.375rem 0.5rem;
+    border: 1px solid var(--border);
+    border-radius: 0.25rem;
+    background: var(--background);
+    color: var(--foreground);
+    font-size: 0.875rem;
+    outline: none;
+}
+
+.password-input:focus {
+    border-color: var(--primary);
+}
+
+.view-key-btn {
+    padding: 0.375rem 0.5rem;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    border: 1px solid var(--border);
+    border-radius: 0.25rem;
+    background: var(--background);
+    color: var(--foreground);
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.view-key-btn:hover {
+    background: var(--hover);
+}
+
+.decrypted-value {
+    padding: 0.375rem 0.5rem;
+    background: var(--background);
+    border: 1px solid var(--border);
+    border-radius: 0.25rem;
+    font-family: monospace;
+    font-size: 0.875rem;
+    word-break: break-all;
+    margin-top: 0.5rem;
 }
 
 .project-context-name {
@@ -2009,4 +2067,45 @@ select.input-field option {
     width: 12px;
     height: 12px;
     stroke: currentColor;
+}
+
+.key-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    padding: 0.25rem 0.5rem;
+    border-radius: 0.25rem;
+    font-size: 0.75rem;
+    font-weight: 500;
+    margin-top: 0.25rem;
+}
+
+.key-badge.encrypted {
+    background-color: var(--hover);
+    color: var(--muted);
+}
+
+.key-badge svg {
+    width: 12px;
+    height: 12px;
+}
+
+#password-prompt-modal .modal-content {
+    max-width: 400px;
+}
+
+#password-prompt-modal .import-title svg {
+    width: 24px;
+    height: 24px;
+    margin-right: 0.5rem;
+}
+
+.key-context-value {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.key-context-value .key-badge {
+    margin-top: 0;
 }

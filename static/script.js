@@ -83,17 +83,55 @@ function deleteProjectFromMenu(event) {
 
 // Add these new functions for key context menu
 let activeKeyValue = null;
+let activeKeyId = null;
 
-function showKeyContextMenu(event, keyValue) {
+function showKeyContextMenu(event, keyValue, keyId, isEncrypted) {
     event.preventDefault();
     event.stopPropagation();
     
     const contextMenu = document.getElementById('key-context-menu');
     activeKeyValue = keyValue;
+    activeKeyId = keyId;
     
     // Update the key value display
     const keyDisplay = contextMenu.querySelector('.key-context-value');
-    keyDisplay.textContent = keyValue;
+    keyDisplay.innerHTML = ''; // Clear previous content
+    
+    if (isEncrypted) {
+        // For encrypted keys, show a placeholder, encrypted badge, and password input
+        keyDisplay.innerHTML = `
+            <div class="encrypted-key-header">
+                <span>[ENCRYPTED]</span>
+                <div class="key-badge encrypted">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <rect width="18" height="11" x="3" y="11" rx="2" ry="2"/>
+                        <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+                    </svg>
+                    <span>Encrypted</span>
+                </div>
+            </div>
+            <div class="password-input-container">
+                <input type="password" class="password-input" placeholder="Enter password to view" onkeydown="handlePasswordKeyDown(event, ${keyId})">
+                <button class="view-key-btn" onclick="viewEncryptedKey(${keyId})">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/>
+                        <circle cx="12" cy="12" r="3"/>
+                    </svg>
+                    View
+                </button>
+            </div>
+            <div class="decrypted-value" style="display: none;"></div>
+        `;
+    } else {
+        // For unencrypted keys, show the actual value
+        keyDisplay.textContent = keyValue;
+    }
+    
+    // Update copy button to handle encryption
+    const copyButton = contextMenu.querySelector('.context-menu-item');
+    copyButton.onclick = isEncrypted ? 
+        () => { hideKeyContextMenu(); showPasswordPrompt('copy', keyId); } : 
+        () => { hideKeyContextMenu(); copyToClipboard(keyValue); };
     
     // Position the menu at cursor
     contextMenu.style.left = `${event.clientX}px`;
@@ -101,17 +139,25 @@ function showKeyContextMenu(event, keyValue) {
     contextMenu.classList.add('show');
     
     // Add click listener to close menu when clicking outside
-    document.addEventListener('click', hideKeyContextMenu);
+    document.addEventListener('click', handleContextMenuClick);
     document.addEventListener('contextmenu', hideKeyContextMenu);
+}
+
+function handleContextMenuClick(event) {
+    const contextMenu = document.getElementById('key-context-menu');
+    if (!contextMenu.contains(event.target)) {
+        hideKeyContextMenu();
+    }
 }
 
 function hideKeyContextMenu() {
     const contextMenu = document.getElementById('key-context-menu');
     contextMenu.classList.remove('show');
     activeKeyValue = null;
+    activeKeyId = null;
     
     // Remove click listeners
-    document.removeEventListener('click', hideKeyContextMenu);
+    document.removeEventListener('click', handleContextMenuClick);
     document.removeEventListener('contextmenu', hideKeyContextMenu);
 }
 
@@ -121,6 +167,73 @@ function copyKeyFromMenu(event) {
         copyToClipboard(activeKeyValue);
     }
     hideKeyContextMenu();
+}
+
+// Add new function to handle password input keydown
+async function handlePasswordKeyDown(event, keyId) {
+    if (event.key === 'Enter') {
+        event.preventDefault();
+        await viewEncryptedKey(keyId);
+    }
+}
+
+// Add new function to view encrypted key
+async function viewEncryptedKey(keyId) {
+    const contextMenu = document.getElementById('key-context-menu');
+    const passwordInput = contextMenu.querySelector('.password-input');
+    const decryptedValueDiv = contextMenu.querySelector('.decrypted-value');
+    const encryptedHeader = contextMenu.querySelector('.encrypted-key-header');
+    const passwordContainer = contextMenu.querySelector('.password-input-container');
+    
+    try {
+        // First decrypt the key
+        const response = await fetch('/keys/decrypt', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                password: passwordInput.value,
+                key_ids: [parseInt(keyId)]
+            })
+        });
+        
+        const result = await response.json();
+        if (!response.ok) {
+            throw new Error(result.error || 'Invalid password');
+        }
+        
+        // Get the decrypted key data
+        const keyResponse = await fetch(`/keys/${keyId}`);
+        if (!keyResponse.ok) {
+            throw new Error('Failed to fetch key data');
+        }
+        const keyData = await keyResponse.json();
+        
+        // Show the decrypted value
+        decryptedValueDiv.textContent = keyData.key;
+        decryptedValueDiv.style.display = 'block';
+        
+        // Hide the password input and encrypted header
+        encryptedHeader.style.display = 'none';
+        passwordContainer.style.display = 'none';
+        
+        // Re-encrypt the key immediately
+        await fetch('/keys/encrypt', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                password: passwordInput.value,
+                key_ids: [parseInt(keyId)]
+            })
+        });
+        
+    } catch (error) {
+        console.error('Error viewing encrypted key:', error);
+        showNotification(error.message, 'error');
+        
+        // Reset the password input on error
+        passwordInput.value = '';
+        passwordInput.focus();
+    }
 }
 
 async function fetchProjects() {
@@ -211,18 +324,19 @@ function renderKeys(keys) {
                 draggable="true" 
                 ondragstart="handleDragStart(event, ${key.id})"
                 ondragend="handleDragEnd(event)"
-                oncontextmenu="showKeyContextMenu(event, '${key.key.replace(/'/g, "\\'")}')">
+                oncontextmenu="showKeyContextMenu(event, '${key.encrypted ? '[ENCRYPTED]' : key.key.replace(/'/g, "\\'")}', ${key.id}, ${key.encrypted})">
             <div class="flex justify-between items-start mb-4">
                 <div>
                     <h3 class="font-semibold">${key.name}</h3>
                     <div class="text-xs text-gray-500 mb-1">Project: ${key.project ? key.project.name : 'None'}</div>
+                    ${key.encrypted ? '<div class="key-badge encrypted"><svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg><span>Encrypted</span></div>' : ''}
                 </div>
                 <div class="flex gap-2">
-                    <button onclick="copyToClipboard('${key.key.replace(/'/g, "\\'")}')" class="btn-icon">
+                    <button onclick="${key.encrypted ? `showPasswordPrompt('copy', ${key.id})` : `copyToClipboard('${key.key.replace(/'/g, "\\'")}')`}" class="btn-icon">
                         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-copy"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>
                         <span>Copy</span>
                     </button>
-                    <button onclick="editKey(${key.id})" class="btn-icon">
+                    <button onclick="${key.encrypted ? `showPasswordPrompt('edit', ${key.id})` : `editKey(${key.id})`}" class="btn-icon">
                         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-pencil"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/><path d="m15 5 4 4"/></svg>
                         <span>Edit</span>
                     </button>
@@ -584,16 +698,18 @@ async function deleteProject(projectId, event) {
     showDeleteProjectModal(projectId);
 }
 
-function copyToClipboard(text, event) {
+async function copyToClipboard(text, event) {
     if (event) {
         event.stopPropagation();
     }
-    navigator.clipboard.writeText(text).then(() => {
+    
+    try {
+        await navigator.clipboard.writeText(text);
         showNotification('Key copied to clipboard!', 'success');
-    }).catch(err => {
+    } catch (err) {
         console.error('Failed to copy:', err);
         showNotification('Failed to copy to clipboard', 'error');
-    });
+    }
 }
 
 function toggleSidebar() {
@@ -1570,6 +1686,97 @@ async function handleProjectDrop(event) {
     } finally {
         draggedProject = null;
     }
+}
+
+// Add these variables at the top with other state variables
+let currentKeyAction = null;
+let currentKeyData = null;
+
+// Add password prompt functions
+function showPasswordPrompt(action, keyId) {
+    currentKeyAction = action;
+    document.getElementById('password-prompt-action').value = action;
+    document.getElementById('password-prompt-key-id').value = keyId;
+    document.getElementById('password-prompt-input').value = '';
+    document.getElementById('password-prompt-modal').classList.add('show');
+}
+
+function hidePasswordPrompt() {
+    document.getElementById('password-prompt-modal').classList.remove('show');
+    currentKeyAction = null;
+    currentKeyData = null;
+}
+
+async function handlePasswordSubmit(event) {
+    event.preventDefault();
+    
+    const password = document.getElementById('password-prompt-input').value;
+    const action = document.getElementById('password-prompt-action').value;
+    const keyId = document.getElementById('password-prompt-key-id').value;
+    
+    try {
+        // First decrypt the key
+        const response = await fetch('/keys/decrypt', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                password: password,
+                key_ids: [parseInt(keyId)]
+            })
+        });
+        
+        const result = await response.json();
+        if (!response.ok) {
+            throw new Error(result.error || 'Invalid password');
+        }
+        
+        // Get the decrypted key data
+        const keyResponse = await fetch(`/keys/${keyId}`);
+        if (!keyResponse.ok) {
+            throw new Error('Failed to fetch key data');
+        }
+        const keyData = await keyResponse.json();
+        
+        // Perform the requested action
+        if (action === 'copy') {
+            await copyToClipboard(keyData.key);
+        } else if (action === 'edit') {
+            await performEdit(keyData);
+        }
+        
+        // Re-encrypt the key immediately
+        await fetch('/keys/encrypt', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                password: password,
+                key_ids: [parseInt(keyId)]
+            })
+        });
+        
+        hidePasswordPrompt();
+        
+        // Refresh the keys display
+        await fetchKeys();
+        
+    } catch (error) {
+        console.error('Error handling password:', error);
+        showNotification(error.message, 'error');
+    }
+}
+
+// Add helper function for edit
+async function performEdit(keyData) {
+    document.getElementById('key-id').value = keyData.id;
+    document.getElementById('name').value = keyData.name;
+    document.getElementById('key').value = keyData.key;
+    document.getElementById('description').value = keyData.description || '';
+    document.getElementById('used-with').value = keyData.used_with || '';
+    document.getElementById('project').value = keyData.project ? keyData.project.id : '';
+    
+    isEditMode = true;
+    document.getElementById('modal-title').textContent = 'Edit Key';
+    document.getElementById('key-modal').classList.add('show');
 }
 
 function downloadDatabase() {
