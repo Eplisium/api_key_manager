@@ -853,12 +853,17 @@ def import_db():
 def encrypt_keys():
     try:
         data = request.get_json()
+        logger.info(f"Received encryption request with data: {data}")
+        
         if not data or 'password' not in data:
+            logger.error("Password missing from request")
             return jsonify({'error': 'Password is required'}), 400
             
         password = data['password']
         project_id = data.get('project_id')
         key_ids = data.get('key_ids', [])
+        
+        logger.info(f"Encrypting keys for project_id: {project_id}, key_ids: {key_ids}")
         
         # Build query
         query = APIKey.query
@@ -869,6 +874,8 @@ def encrypt_keys():
             
         # Get keys to encrypt
         keys = query.filter_by(encrypted=False).all()
+        logger.info(f"Found {len(keys)} unencrypted keys to process")
+        
         if not keys:
             return jsonify({'message': 'No unencrypted keys found to encrypt'}), 200
             
@@ -876,10 +883,13 @@ def encrypt_keys():
         encrypted_count = 0
         for key in keys:
             try:
+                logger.info(f"Attempting to encrypt key: {key.name}")
                 key.encrypt_key(password)
                 encrypted_count += 1
+                logger.info(f"Successfully encrypted key: {key.name}")
             except Exception as e:
                 logger.error(f"Error encrypting key {key.name}: {str(e)}")
+                logger.exception("Full traceback:")
                 
         db.session.commit()
         logger.info(f"Successfully encrypted {encrypted_count} keys")
@@ -892,18 +902,24 @@ def encrypt_keys():
     except Exception as e:
         db.session.rollback()
         logger.error(f"Error encrypting keys: {str(e)}")
+        logger.exception("Full traceback:")
         return jsonify({'error': f'Failed to encrypt keys: {str(e)}'}), 500
 
 @app.route('/keys/decrypt', methods=['POST'])
 def decrypt_keys():
     try:
         data = request.get_json()
+        logger.info(f"Received decryption request with data: {data}")
+        
         if not data or 'password' not in data:
+            logger.error("Password missing from request")
             return jsonify({'error': 'Password is required'}), 400
             
         password = data['password']
         project_id = data.get('project_id')
         key_ids = data.get('key_ids', [])
+        
+        logger.info(f"Decrypting keys for project_id: {project_id}, key_ids: {key_ids}")
         
         # Build query
         query = APIKey.query
@@ -914,6 +930,8 @@ def decrypt_keys():
             
         # Get keys to decrypt
         keys = query.filter_by(encrypted=True).all()
+        logger.info(f"Found {len(keys)} encrypted keys to process")
+        
         if not keys:
             return jsonify({'message': 'No encrypted keys found to decrypt'}), 200
             
@@ -923,11 +941,14 @@ def decrypt_keys():
         
         for key in keys:
             try:
+                logger.info(f"Attempting to decrypt key: {key.name}")
                 key.decrypt_key(password)
                 decrypted_count += 1
+                logger.info(f"Successfully decrypted key: {key.name}")
             except ValueError as e:
                 failed_keys.append({'id': key.id, 'name': key.name, 'error': str(e)})
                 logger.error(f"Error decrypting key {key.name}: {str(e)}")
+                logger.exception("Full traceback:")
                 
         if decrypted_count > 0:
             db.session.commit()
@@ -946,6 +967,7 @@ def decrypt_keys():
     except Exception as e:
         db.session.rollback()
         logger.error(f"Error decrypting keys: {str(e)}")
+        logger.exception("Full traceback:")
         return jsonify({'error': f'Failed to decrypt keys: {str(e)}'}), 500
 
 @app.route('/keys/status', methods=['GET'])

@@ -39,7 +39,7 @@ class APIKey(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(100), nullable=False)
     key = db.Column(db.String(256), nullable=False)
-    encrypted = db.Column(db.Boolean, default=False)
+    encrypted = db.Column(db.Boolean, nullable=False, default=False, server_default='0')
     encryption_salt = db.Column(db.LargeBinary, nullable=True)
     description = db.Column(db.Text)
     used_with = db.Column(db.String(200))

@@ -1816,7 +1816,7 @@ function showEncryptionStatus() {
     document.getElementById('unencrypted-keys').textContent = 'Loading...';
     
     // Fetch status
-    const projectId = currentProject ? currentProject.id : null;
+    const projectId = selectedProject ? selectedProject : null;
     const queryParams = projectId ? `?project_id=${projectId}` : '';
     
     fetch(`/keys/status${queryParams}`)
@@ -1859,8 +1859,14 @@ function handleEncryption(event) {
     // Prepare request data
     const data = {
         password: password,
-        project_id: scope === 'project' ? currentProject?.id : null
+        project_id: scope === 'project' && selectedProject ? selectedProject : null
     };
+    
+    // Validate project selection when scope is 'project'
+    if (scope === 'project' && !selectedProject) {
+        showNotification('Please select a project first', 'error');
+        return;
+    }
     
     // Disable form
     const submitBtn = form.querySelector('button[type="submit"]');
@@ -1881,7 +1887,14 @@ function handleEncryption(event) {
         },
         body: JSON.stringify(data)
     })
-    .then(response => response.json())
+    .then(response => {
+        if (!response.ok) {
+            return response.json().then(data => {
+                throw new Error(data.error || `Failed to ${mode} keys`);
+            });
+        }
+        return response.json();
+    })
     .then(data => {
         if (data.error) {
             throw new Error(data.error);
@@ -1896,7 +1909,7 @@ function handleEncryption(event) {
         showNotification(message, data.count > 0 ? 'success' : 'warning');
         
         // Refresh keys display
-        loadKeys();
+        fetchKeys();
         
         // Close modal
         hideEncryptionModal();
