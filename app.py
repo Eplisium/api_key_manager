@@ -9,6 +9,9 @@ import os
 import io
 import json
 import yaml
+import tempfile
+import sqlite3
+import shutil
 
 logging.config.fileConfig('logging.conf')
 logger = logging.getLogger(__name__)
@@ -685,6 +688,148 @@ def reorder_project(project_id):
         logger.error(f"Error reordering project: {str(e)}")
         logger.exception("Full traceback:")
         return jsonify({'error': f'Failed to reorder project: {str(e)}'}), 500
+
+@app.route('/import-db', methods=['POST'])
+def import_db():
+    temp_db_path = None
+    try:
+        if 'file' not in request.files:
+            return jsonify({'error': 'No file provided'}), 400
+        
+        file = request.files['file']
+        if not file.filename.endswith('.db'):
+            return jsonify({'error': 'Invalid file type. Only .db files are allowed'}), 400
+        
+        import_mode = request.form.get('import-mode', 'overwrite')
+        
+        # Get the correct database path from Flask configuration
+        db_path = os.path.join(app.instance_path, 'keys.db')
+        
+        # Create a temporary file
+        temp_fd, temp_db_path = tempfile.mkstemp(suffix='.db')
+        os.close(temp_fd)  # Close the file descriptor immediately
+        
+        # Save the uploaded file
+        file.save(temp_db_path)
+        
+        # Validate the uploaded database
+        try:
+            conn = sqlite3.connect(temp_db_path)
+            cursor = conn.cursor()
+            cursor.execute("SELECT name FROM sqlite_master WHERE type='table'")
+            tables = cursor.fetchall()
+            required_tables = {'api_key', 'project'}
+            db_tables = {table[0] for table in tables}
+            cursor.close()
+            conn.close()
+            
+            if not required_tables.issubset(db_tables):
+                raise ValueError('Invalid database format')
+                
+        except (sqlite3.Error, ValueError) as e:
+            if os.path.exists(temp_db_path):
+                os.unlink(temp_db_path)
+            return jsonify({'error': f'Invalid database file: {str(e)}'}), 400
+        
+        if import_mode == 'overwrite':
+            # Close the current database connection
+            db.session.remove()
+            
+            # Backup the current database
+            backup_path = os.path.join(app.instance_path, 'database_backup.db')
+            if os.path.exists(db_path):
+                shutil.copy2(db_path, backup_path)
+            
+            try:
+                # Replace the current database with the imported one
+                shutil.copy2(temp_db_path, db_path)
+                if os.path.exists(backup_path):
+                    os.unlink(backup_path)
+            except Exception as e:
+                # Restore from backup if something goes wrong
+                if os.path.exists(backup_path):
+                    shutil.copy2(backup_path, db_path)
+                    os.unlink(backup_path)
+                raise e
+            
+        else:  # merge mode
+            # Connect to the imported database
+            import_conn = sqlite3.connect(temp_db_path)
+            import_conn.row_factory = sqlite3.Row
+            
+            try:
+                # Get projects and keys from imported database
+                imported_projects = import_conn.execute('SELECT * FROM project').fetchall()
+                imported_keys = import_conn.execute('SELECT * FROM api_key').fetchall()
+                
+                # Close the connection before processing data
+                import_conn.close()
+                import_conn = None
+                
+                # Process imported data
+                with db.session.no_autoflush:
+                    # Import projects first
+                    project_id_map = {}  # Maps old project IDs to new ones
+                    for proj in imported_projects:
+                        existing_project = Project.query.filter_by(name=proj['name']).first()
+                        if existing_project:
+                            project_id_map[proj['id']] = existing_project.id
+                        else:
+                            new_project = Project(name=proj['name'])
+                            db.session.add(new_project)
+                            db.session.flush()  # Get the new ID
+                            project_id_map[proj['id']] = new_project.id
+                    
+                    # Import keys
+                    for key_data in imported_keys:
+                        # Map to new project ID if exists
+                        project_id = project_id_map.get(key_data['project_id'])
+                        
+                        # Generate unique name if needed
+                        base_name = key_data['name']
+                        name = base_name
+                        counter = 1
+                        
+                        while True:
+                            existing_key = APIKey.query.filter_by(
+                                name=name,
+                                project_id=project_id
+                            ).first()
+                            
+                            if not existing_key:
+                                break
+                                
+                            name = f"{base_name} ({counter})"
+                            counter += 1
+                        
+                        new_key = APIKey(
+                            name=name,
+                            key=key_data['key'],
+                            description=key_data['description'],
+                            used_with=key_data['used_with'],
+                            project_id=project_id
+                        )
+                        db.session.add(new_key)
+                
+                db.session.commit()
+            finally:
+                # Ensure the connection is closed
+                if import_conn is not None:
+                    import_conn.close()
+        
+        return jsonify({'message': 'Database imported successfully'}), 200
+            
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': f'Failed to import database: {str(e)}'}), 500
+        
+    finally:
+        # Clean up temporary file
+        try:
+            if temp_db_path and os.path.exists(temp_db_path):
+                os.unlink(temp_db_path)
+        except Exception as e:
+            logger.error(f"Error cleaning up temporary file: {str(e)}")
 
 if __name__ == '__main__':
     app.run(host='localhost', port=5000, debug=True)# Main application file 

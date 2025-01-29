@@ -1736,3 +1736,150 @@ select.input-field option {
     opacity: 0.6;
     cursor: not-allowed;
 }
+
+.manage-db-btn {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem;
+    margin-bottom: 0.5rem;
+    color: var(--muted);
+    transition: all 0.2s;
+}
+
+.manage-db-btn svg {
+    width: 16px;
+    height: 16px;
+    transition: transform 0.2s;
+}
+
+.manage-db-btn span {
+    flex: 1;
+    text-align: left;
+    font-size: 0.875rem;
+}
+
+.manage-db-btn:hover {
+    background-color: var(--hover);
+    color: var(--foreground);
+}
+
+.manage-db-btn:hover svg {
+    transform: scale(1.1);
+}
+
+.sidebar.collapsed .manage-db-btn {
+    width: 40px;
+    height: 40px;
+    padding: 0.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 0.5rem;
+}
+
+.sidebar.collapsed .manage-db-btn span {
+    display: none;
+}
+
+.sidebar.collapsed .manage-db-btn svg {
+    margin: 0;
+}
+
+.manage-db-dropdown {
+    min-width: 180px;
+    position: absolute;
+    left: 100%;
+    top: 0;
+    margin-left: 8px;
+}
+
+.sidebar.collapsed .manage-db-dropdown {
+    left: 100%;
+    top: 0;
+}
+
+.manage-db-dropdown a {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 1rem;
+    color: var(--foreground);
+    text-decoration: none;
+    transition: background-color 0.2s;
+}
+
+.manage-db-dropdown a:hover {
+    background-color: var(--hover);
+}
+
+.manage-db-dropdown a svg {
+    width: 16px;
+    height: 16px;
+}
+
+.radio-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.radio-label {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    cursor: pointer;
+    padding: 0.5rem;
+    border-radius: 0.375rem;
+    transition: background-color 0.2s;
+}
+
+.radio-label:hover {
+    background-color: var(--hover);
+}
+
+.radio-label input[type="radio"] {
+    margin: 0;
+    width: 1rem;
+    height: 1rem;
+    cursor: pointer;
+}
+
+[data-theme="dark"] .radio-label:hover {
+    background-color: var(--hover);
+}
+
+.import-header {
+    display: flex;
+    align-items: center;
+    margin-bottom: 1.5rem;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid var(--border);
+}
+
+.import-title {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.import-title svg {
+    color: var(--muted);
+}
+
+#db-file {
+    padding: 0.75rem;
+    border: 2px dashed var(--border);
+    border-radius: 0.375rem;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+#db-file:hover {
+    border-color: var(--muted);
+}
+
+[data-theme="dark"] #db-file {
+    background-color: var(--card);
+}
