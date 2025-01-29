@@ -1719,3 +1719,162 @@ async function handleDBImport(event) {
         submitBtn.innerHTML = 'Import';
     }
 }
+
+// Encryption Functions
+function showEncryptionModal(mode) {
+    const modal = document.getElementById('encryption-modal');
+    const title = document.getElementById('encryption-modal-title');
+    const submitBtn = document.getElementById('encryption-submit-btn');
+    const modeInput = document.getElementById('encryption-mode');
+    const icon = document.getElementById('encryption-modal-icon');
+    
+    // Reset form
+    document.getElementById('encryption-form').reset();
+    
+    // Set mode
+    modeInput.value = mode;
+    
+    // Update UI based on mode
+    if (mode === 'encrypt') {
+        title.textContent = 'Encrypt Keys';
+        submitBtn.textContent = 'Encrypt Keys';
+        icon.innerHTML = '<rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>';
+    } else {
+        title.textContent = 'Decrypt Keys';
+        submitBtn.textContent = 'Decrypt Keys';
+        icon.innerHTML = '<rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="m8 11-5 5"/><path d="m21 16-5-5"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>';
+    }
+    
+    modal.style.display = 'flex';
+}
+
+function hideEncryptionModal() {
+    document.getElementById('encryption-modal').style.display = 'none';
+}
+
+function showEncryptionStatus() {
+    const modal = document.getElementById('encryption-status-modal');
+    modal.style.display = 'flex';
+    
+    // Reset counters
+    document.getElementById('total-keys').textContent = 'Loading...';
+    document.getElementById('encrypted-keys').textContent = 'Loading...';
+    document.getElementById('unencrypted-keys').textContent = 'Loading...';
+    
+    // Fetch status
+    const projectId = currentProject ? currentProject.id : null;
+    const queryParams = projectId ? `?project_id=${projectId}` : '';
+    
+    fetch(`/keys/status${queryParams}`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.error) {
+                throw new Error(data.error);
+            }
+            
+            document.getElementById('total-keys').textContent = data.total_keys;
+            document.getElementById('encrypted-keys').textContent = data.encrypted_keys;
+            document.getElementById('unencrypted-keys').textContent = data.unencrypted_keys;
+        })
+        .catch(error => {
+            console.error('Error fetching encryption status:', error);
+            showNotification(error.message, 'error');
+            hideEncryptionStatusModal();
+        });
+}
+
+function hideEncryptionStatusModal() {
+    document.getElementById('encryption-status-modal').style.display = 'none';
+}
+
+function handleEncryption(event) {
+    event.preventDefault();
+    
+    const form = event.target;
+    const mode = document.getElementById('encryption-mode').value;
+    const password = document.getElementById('encryption-password').value;
+    const confirmPassword = document.getElementById('encryption-confirm-password').value;
+    const scope = document.querySelector('input[name="encryption-scope"]:checked').value;
+    
+    // Validate passwords match
+    if (password !== confirmPassword) {
+        showNotification('Passwords do not match', 'error');
+        return;
+    }
+    
+    // Prepare request data
+    const data = {
+        password: password,
+        project_id: scope === 'project' ? currentProject?.id : null
+    };
+    
+    // Disable form
+    const submitBtn = form.querySelector('button[type="submit"]');
+    const originalText = submitBtn.textContent;
+    submitBtn.disabled = true;
+    submitBtn.innerHTML = `
+        <svg class="animate-spin" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 12a9 9 0 1 1-6.219-8.56"/>
+        </svg>
+        Processing...
+    `;
+    
+    // Send request
+    fetch(`/keys/${mode}`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(data)
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.error) {
+            throw new Error(data.error);
+        }
+        
+        // Show results
+        let message = data.message;
+        if (data.failed_keys && data.failed_keys.length > 0) {
+            message += `\nFailed to process ${data.failed_keys.length} keys.`;
+        }
+        
+        showNotification(message, data.count > 0 ? 'success' : 'warning');
+        
+        // Refresh keys display
+        loadKeys();
+        
+        // Close modal
+        hideEncryptionModal();
+    })
+    .catch(error => {
+        console.error(`Error ${mode}ing keys:`, error);
+        showNotification(error.message, 'error');
+    })
+    .finally(() => {
+        // Reset form state
+        submitBtn.disabled = false;
+        submitBtn.textContent = originalText;
+    });
+}
+
+// Update the refreshKeyCard function to show encryption status
+function refreshKeyCard(key) {
+    // ... existing code ...
+    
+    // Add encryption status indicator
+    if (key.encrypted) {
+        const encryptedBadge = document.createElement('div');
+        encryptedBadge.className = 'key-badge encrypted';
+        encryptedBadge.innerHTML = `
+            <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <rect width="18" height="11" x="3" y="11" rx="2" ry="2"/>
+                <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+            </svg>
+            <span>Encrypted</span>
+        `;
+        keyHeader.appendChild(encryptedBadge);
+    }
+    
+    // ... rest of the existing code ...
+}

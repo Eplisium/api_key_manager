@@ -849,5 +849,129 @@ def import_db():
         except Exception as e:
             logger.error(f"Error cleaning up temporary file: {str(e)}")
 
+@app.route('/keys/encrypt', methods=['POST'])
+def encrypt_keys():
+    try:
+        data = request.get_json()
+        if not data or 'password' not in data:
+            return jsonify({'error': 'Password is required'}), 400
+            
+        password = data['password']
+        project_id = data.get('project_id')
+        key_ids = data.get('key_ids', [])
+        
+        # Build query
+        query = APIKey.query
+        if project_id is not None:
+            query = query.filter_by(project_id=project_id)
+        elif key_ids:
+            query = query.filter(APIKey.id.in_(key_ids))
+            
+        # Get keys to encrypt
+        keys = query.filter_by(encrypted=False).all()
+        if not keys:
+            return jsonify({'message': 'No unencrypted keys found to encrypt'}), 200
+            
+        # Encrypt keys
+        encrypted_count = 0
+        for key in keys:
+            try:
+                key.encrypt_key(password)
+                encrypted_count += 1
+            except Exception as e:
+                logger.error(f"Error encrypting key {key.name}: {str(e)}")
+                
+        db.session.commit()
+        logger.info(f"Successfully encrypted {encrypted_count} keys")
+        
+        return jsonify({
+            'message': f'Successfully encrypted {encrypted_count} keys',
+            'count': encrypted_count
+        }), 200
+        
+    except Exception as e:
+        db.session.rollback()
+        logger.error(f"Error encrypting keys: {str(e)}")
+        return jsonify({'error': f'Failed to encrypt keys: {str(e)}'}), 500
+
+@app.route('/keys/decrypt', methods=['POST'])
+def decrypt_keys():
+    try:
+        data = request.get_json()
+        if not data or 'password' not in data:
+            return jsonify({'error': 'Password is required'}), 400
+            
+        password = data['password']
+        project_id = data.get('project_id')
+        key_ids = data.get('key_ids', [])
+        
+        # Build query
+        query = APIKey.query
+        if project_id is not None:
+            query = query.filter_by(project_id=project_id)
+        elif key_ids:
+            query = query.filter(APIKey.id.in_(key_ids))
+            
+        # Get keys to decrypt
+        keys = query.filter_by(encrypted=True).all()
+        if not keys:
+            return jsonify({'message': 'No encrypted keys found to decrypt'}), 200
+            
+        # Decrypt keys
+        decrypted_count = 0
+        failed_keys = []
+        
+        for key in keys:
+            try:
+                key.decrypt_key(password)
+                decrypted_count += 1
+            except ValueError as e:
+                failed_keys.append({'id': key.id, 'name': key.name, 'error': str(e)})
+                logger.error(f"Error decrypting key {key.name}: {str(e)}")
+                
+        if decrypted_count > 0:
+            db.session.commit()
+            logger.info(f"Successfully decrypted {decrypted_count} keys")
+        
+        response = {
+            'message': f'Successfully decrypted {decrypted_count} keys',
+            'count': decrypted_count
+        }
+        
+        if failed_keys:
+            response['failed_keys'] = failed_keys
+            
+        return jsonify(response), 200 if decrypted_count > 0 else 400
+        
+    except Exception as e:
+        db.session.rollback()
+        logger.error(f"Error decrypting keys: {str(e)}")
+        return jsonify({'error': f'Failed to decrypt keys: {str(e)}'}), 500
+
+@app.route('/keys/status', methods=['GET'])
+def get_encryption_status():
+    try:
+        project_id = request.args.get('project_id', type=int)
+        
+        # Build query
+        query = APIKey.query
+        if project_id is not None:
+            query = query.filter_by(project_id=project_id)
+            
+        # Get counts
+        total_keys = query.count()
+        encrypted_keys = query.filter_by(encrypted=True).count()
+        unencrypted_keys = total_keys - encrypted_keys
+        
+        return jsonify({
+            'total_keys': total_keys,
+            'encrypted_keys': encrypted_keys,
+            'unencrypted_keys': unencrypted_keys
+        }), 200
+        
+    except Exception as e:
+        logger.error(f"Error getting encryption status: {str(e)}")
+        return jsonify({'error': f'Failed to get encryption status: {str(e)}'}), 500
+
 if __name__ == '__main__':
     app.run(host='localhost', port=5000, debug=True)# Main application file 
