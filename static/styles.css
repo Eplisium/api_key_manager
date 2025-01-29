@@ -1065,3 +1065,30 @@ select.input-field option {
     border: 1px solid var(--border);
     text-align: center;
 }
+
+.collapsed-new-project {
+    display: none;
+}
+
+.sidebar.collapsed .collapsed-new-project {
+    display: flex;
+    padding: 0.375rem;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    margin: 0.5rem auto;
+    border-radius: 0.375rem;
+    background: transparent;
+}
+
+.sidebar.collapsed .collapsed-new-project:hover {
+    background-color: var(--border);
+}
+
+.sidebar.collapsed .collapsed-new-project span {
+    display: none;
+}
+
+.sidebar.collapsed .collapsed-new-project svg {
+    margin: 0;
+}
