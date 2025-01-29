@@ -269,7 +269,7 @@ select.input-field option {
   animation: slideUpFade 0.3s ease-out;
   z-index: 1000;
   opacity: 1;
-  transition: opacity 0.3s ease-out;
+  transition: all 0.3s ease-out;
 }
 
 [data-theme="dark"] .notification {
@@ -282,6 +282,20 @@ select.input-field option {
 
 .notification.error {
   border-left: 4px solid hsl(0, 84.2%, 60.2%);
+  cursor: pointer;
+}
+
+.notification.error:hover {
+  background: var(--hover);
+}
+
+.notification.error .copy-icon {
+  opacity: 0.7;
+  transition: opacity 0.2s ease;
+}
+
+.notification.error:hover .copy-icon {
+  opacity: 1;
 }
 
 @keyframes slideUpFade {

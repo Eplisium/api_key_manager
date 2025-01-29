@@ -1328,9 +1328,26 @@ function showNotification(message, type = 'success') {
         icon = '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>';
     } else if (type === 'error') {
         icon = '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>';
+        // Add copy icon for error messages
+        icon += '<svg class="copy-icon" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-left: 8px; cursor: pointer;"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>';
     }
     
     notification.innerHTML = `${icon}${message}`;
+    
+    // Add click handler for error messages
+    if (type === 'error') {
+        notification.style.cursor = 'pointer';
+        notification.title = 'Click to copy error message';
+        notification.addEventListener('click', () => {
+            navigator.clipboard.writeText(message).then(() => {
+                // Show a mini notification that the error was copied
+                showNotification('Error message copied to clipboard', 'success');
+            }).catch(err => {
+                console.error('Failed to copy error message:', err);
+            });
+        });
+    }
+    
     document.body.appendChild(notification);
     
     // Remove the notification after 3 seconds
@@ -1556,57 +1573,60 @@ async function handleProjectDrop(event) {
 }
 
 function downloadDatabase() {
-    try {
-        // Show loading state
-        const button = document.querySelector('button[onclick="downloadDatabase()"]');
-        const originalContent = button.innerHTML;
-        button.innerHTML = `
-            <svg class="animate-spin" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="2" x2="12" y2="6"/><line x1="12" y1="18" x2="12" y2="22"/><line x1="4.93" y1="4.93" x2="7.76" y2="7.76"/><line x1="16.24" y1="16.24" x2="19.07" y2="19.07"/><line x1="2" y1="12" x2="6" y2="12"/><line x1="18" y1="12" x2="22" y2="12"/><line x1="4.93" y1="19.07" x2="7.76" y2="16.24"/><line x1="16.24" y1="7.76" x2="19.07" y2="4.93"/></svg>
-            <span>Downloading...</span>
-        `;
-        button.disabled = true;
+    const button = document.querySelector('.download-db-btn');
+    const originalContent = button.innerHTML;
+    
+    // Disable button and show loading state
+    button.disabled = true;
+    button.innerHTML = `
+        <svg class="animate-spin" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 12a9 9 0 1 1-6.219-8.56"/>
+        </svg>
+        Downloading...
+    `;
 
-        fetch('/download-db')
-            .then(response => {
-                if (!response.ok) {
-                    return response.json().then(data => {
-                        throw new Error(data.error || 'Failed to download database');
-                    });
-                }
-                const contentDisposition = response.headers.get('Content-Disposition');
-                const filename = contentDisposition
-                    ? contentDisposition.split('filename=')[1]?.replace(/"/g, '')
-                    : 'api_keys_backup.db';
-                
-                return response.blob().then(blob => ({
-                    blob: blob,
-                    filename: filename
-                }));
-            })
-            .then(({ blob, filename }) => {
-                const url = window.URL.createObjectURL(blob);
-                const a = document.createElement('a');
-                a.style.display = 'none';
-                a.href = url;
-                a.download = filename;
-                document.body.appendChild(a);
-                a.click();
-                window.URL.revokeObjectURL(url);
-                document.body.removeChild(a);
-                showNotification('Database downloaded successfully', 'success');
-            })
-            .catch(error => {
-                console.error('Error downloading database:', error);
-                showNotification(error.message, 'error');
-            })
-            .finally(() => {
-                button.innerHTML = originalContent;
-                button.disabled = false;
-            });
-    } catch (error) {
-        console.error('Error initiating download:', error);
-        showNotification('Failed to initiate download', 'error');
-    }
+    fetch('/download-db')
+        .then(response => {
+            if (!response.ok) {
+                return response.json().then(data => {
+                    throw new Error(data.error || 'Failed to download database');
+                });
+            }
+            return response.blob();
+        })
+        .then(blob => {
+            // Create download link
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            const timestamp = new Date().toLocaleString('en-US', {
+                year: 'numeric',
+                month: '2-digit',
+                day: '2-digit',
+                hour: '2-digit',
+                minute: '2-digit',
+                hour12: true
+            }).replace(/[/:]/g, '').replace(', ', '_').replace(' ', '').toLowerCase();
+            
+            a.href = url;
+            a.download = `keys_${timestamp}.db`;
+            document.body.appendChild(a);
+            a.click();
+            
+            // Cleanup
+            window.URL.revokeObjectURL(url);
+            document.body.removeChild(a);
+            
+            showNotification('Database downloaded successfully', 'success');
+        })
+        .catch(error => {
+            console.error('Error downloading database:', error);
+            showNotification(error.message, 'error');
+        })
+        .finally(() => {
+            // Reset button state
+            button.disabled = false;
+            button.innerHTML = originalContent;
+        });
 }
 
 function toggleManageDBDropdown(event) {

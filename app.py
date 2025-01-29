@@ -1,6 +1,6 @@
 import logging
 import logging.config
-from flask import Flask, render_template, request, jsonify, redirect, url_for, send_file
+from flask import Flask, render_template, request, jsonify, redirect, url_for, send_file, after_this_request
 from flask_migrate import Migrate
 from database import db, APIKey, Project
 from datetime import datetime
@@ -17,7 +17,13 @@ logging.config.fileConfig('logging.conf')
 logger = logging.getLogger(__name__)
 
 app = Flask(__name__)
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///keys.db'
+# Ensure instance folder exists
+if not os.path.exists(app.instance_path):
+    os.makedirs(app.instance_path)
+
+# Use instance path for database
+db_path = os.path.join(app.instance_path, 'keys.db')
+app.config['SQLALCHEMY_DATABASE_URI'] = f'sqlite:///{db_path}'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.secret_key = 'your-secret-key-here'
 
@@ -616,23 +622,38 @@ def export_keys():
 def download_database():
     """Download the entire SQLite database file."""
     try:
-        # Get the database file path from the instance directory
-        db_path = os.path.join(app.instance_path, 'keys.db')
         if not os.path.exists(db_path):
             logger.error(f"Database file not found at path: {db_path}")
             return jsonify({'error': 'Database file not found'}), 404
             
-        # Get current timestamp for the filename
-        timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
-        filename = f"api_keys_backup_{timestamp}.db"
+        # Get current timestamp in 12-hour format
+        timestamp = datetime.now().strftime('%Y%m%d_%I%M%p').lower()
+        filename = f"keys_{timestamp}.db"
         
         logger.info(f"Initiating database download with filename: {filename}")
-        return send_file(
-            db_path,
-            mimetype='application/x-sqlite3',
-            as_attachment=True,
-            download_name=filename
-        )
+        
+        # Create a copy of the database to avoid locks
+        with tempfile.NamedTemporaryFile(delete=False, suffix='.db') as temp_file:
+            shutil.copy2(db_path, temp_file.name)
+            
+            try:
+                # Send the temporary file
+                return send_file(
+                    temp_file.name,
+                    mimetype='application/x-sqlite3',
+                    as_attachment=True,
+                    download_name=filename,
+                    max_age=0
+                )
+            finally:
+                # Schedule the temp file for deletion after response is sent
+                @after_this_request
+                def cleanup(response):
+                    try:
+                        os.unlink(temp_file.name)
+                    except Exception as e:
+                        logger.error(f"Error cleaning up temp file: {str(e)}")
+                    return response
         
     except Exception as e:
         logger.error(f"Error downloading database: {str(e)}")
@@ -701,9 +722,6 @@ def import_db():
             return jsonify({'error': 'Invalid file type. Only .db files are allowed'}), 400
         
         import_mode = request.form.get('import-mode', 'overwrite')
-        
-        # Get the correct database path from Flask configuration
-        db_path = os.path.join(app.instance_path, 'keys.db')
         
         # Create a temporary file
         temp_fd, temp_db_path = tempfile.mkstemp(suffix='.db')
