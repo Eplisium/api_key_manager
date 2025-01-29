@@ -1568,3 +1568,58 @@ select.input-field option {
 [data-theme="dark"] .title-key:hover {
     text-shadow: 0 0 12px rgba(var(--primary-rgb), 0.6);
 }
+
+/* Delete Modal Styles */
+.delete-project-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 16px;
+    color: var(--danger);
+}
+
+.delete-project-content {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.delete-project-message {
+    font-size: 1rem;
+    color: var(--text);
+    margin: 8px 0;
+}
+
+.delete-options {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.delete-options .btn {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+    justify-content: center;
+    padding: 12px;
+    font-size: 1rem;
+}
+
+.btn-danger {
+    background-color: var(--danger);
+    color: white;
+}
+
+.btn-danger:hover {
+    background-color: var(--danger-hover);
+}
+
+.btn-warning {
+    background-color: var(--warning);
+    color: white;
+}
+
+.btn-warning:hover {
+    background-color: var(--warning-hover);
+}
