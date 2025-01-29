@@ -1634,21 +1634,75 @@ function toggleManageDBDropdown(event) {
         event.stopPropagation();
     }
     const dropdown = document.getElementById('manage-db-dropdown');
+    const button = document.querySelector('.download-db-btn');
+    const sidebar = document.getElementById('sidebar');
+    
+    // Toggle dropdown visibility
     dropdown.classList.toggle('show');
     
-    // Close dropdown when clicking outside
-    function closeDropdown(e) {
-        if (!e.target.closest('.download-db-btn') && !e.target.closest('.manage-db-dropdown')) {
-            dropdown.classList.remove('show');
-            document.removeEventListener('click', closeDropdown);
-        }
-    }
-    
-    // Remove existing listener before adding a new one
-    document.removeEventListener('click', closeDropdown);
-    
-    // Only add the click listener if the dropdown is being shown
     if (dropdown.classList.contains('show')) {
+        // Get button and viewport dimensions
+        const buttonRect = button.getBoundingClientRect();
+        const viewportWidth = window.innerWidth;
+        const viewportHeight = window.innerHeight;
+        
+        // Reset any existing positioning
+        dropdown.style.left = '';
+        dropdown.style.right = '';
+        dropdown.style.top = '';
+        dropdown.style.bottom = '';
+        dropdown.style.transform = '';
+        
+        if (sidebar.classList.contains('collapsed')) {
+            // For collapsed sidebar
+            const spaceOnRight = viewportWidth - buttonRect.right;
+            const spaceOnLeft = buttonRect.left;
+            
+            if (spaceOnRight >= 240) { // Show on right if there's enough space
+                dropdown.style.left = `${buttonRect.right + 4}px`;
+                dropdown.style.top = `${Math.min(buttonRect.top, viewportHeight - 300)}px`;
+            } else if (spaceOnLeft >= 240) { // Show on left if there's enough space
+                dropdown.style.right = `${viewportWidth - buttonRect.left + 4}px`;
+                dropdown.style.top = `${Math.min(buttonRect.top, viewportHeight - 300)}px`;
+            } else { // Center on screen if no space on either side
+                dropdown.style.left = '50%';
+                dropdown.style.top = '50%';
+                dropdown.style.transform = 'translate(-50%, -50%)';
+            }
+        } else {
+            // For expanded sidebar, let CSS handle the positioning
+            // Just check if we need to flip it above the button
+            const dropdownHeight = dropdown.offsetHeight;
+            const spaceBelow = viewportHeight - buttonRect.bottom;
+            
+            if (spaceBelow < dropdownHeight && buttonRect.top > dropdownHeight) {
+                // If not enough space below but enough space above, show above
+                dropdown.style.bottom = '100%';
+                dropdown.style.top = 'auto';
+                dropdown.style.marginTop = '0';
+                dropdown.style.marginBottom = '4px';
+            }
+        }
+        
+        // Add click listener to close dropdown when clicking outside
+        function closeDropdown(e) {
+            if (!e.target.closest('.download-db-btn') && !e.target.closest('.manage-db-dropdown')) {
+                dropdown.classList.remove('show');
+                // Reset positioning styles
+                dropdown.style.left = '';
+                dropdown.style.right = '';
+                dropdown.style.top = '';
+                dropdown.style.bottom = '';
+                dropdown.style.transform = '';
+                dropdown.style.marginTop = '';
+                dropdown.style.marginBottom = '';
+                document.removeEventListener('click', closeDropdown);
+            }
+        }
+        
+        // Remove existing listener before adding a new one
+        document.removeEventListener('click', closeDropdown);
+        
         // Add the click listener on the next tick to avoid immediate closure
         setTimeout(() => {
             document.addEventListener('click', closeDropdown);
