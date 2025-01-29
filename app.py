@@ -609,6 +609,32 @@ def export_keys():
         logger.error(f"Error exporting keys: {str(e)}")
         return jsonify({'error': f'Failed to export keys: {str(e)}'}), 500
 
+@app.route('/download-db', methods=['GET'])
+def download_database():
+    """Download the entire SQLite database file."""
+    try:
+        # Get the database file path from the instance directory
+        db_path = os.path.join(app.instance_path, 'keys.db')
+        if not os.path.exists(db_path):
+            logger.error(f"Database file not found at path: {db_path}")
+            return jsonify({'error': 'Database file not found'}), 404
+            
+        # Get current timestamp for the filename
+        timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+        filename = f"api_keys_backup_{timestamp}.db"
+        
+        logger.info(f"Initiating database download with filename: {filename}")
+        return send_file(
+            db_path,
+            mimetype='application/x-sqlite3',
+            as_attachment=True,
+            download_name=filename
+        )
+        
+    except Exception as e:
+        logger.error(f"Error downloading database: {str(e)}")
+        return jsonify({'error': f'Failed to download database: {str(e)}'}), 500
+
 @app.route('/projects/<int:project_id>/reorder', methods=['PATCH'])
 def reorder_project(project_id):
     try:

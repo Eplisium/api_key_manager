@@ -582,7 +582,7 @@ async function deleteProject(projectId, event) {
         event.stopPropagation();
     }
     showDeleteProjectModal(projectId);
-        }
+}
 
 function copyToClipboard(text, event) {
     if (event) {
@@ -1552,5 +1552,59 @@ async function handleProjectDrop(event) {
         showNotification(error.message, 'error');
     } finally {
         draggedProject = null;
+    }
+}
+
+function downloadDatabase() {
+    try {
+        // Show loading state
+        const button = document.querySelector('button[onclick="downloadDatabase()"]');
+        const originalContent = button.innerHTML;
+        button.innerHTML = `
+            <svg class="animate-spin" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="2" x2="12" y2="6"/><line x1="12" y1="18" x2="12" y2="22"/><line x1="4.93" y1="4.93" x2="7.76" y2="7.76"/><line x1="16.24" y1="16.24" x2="19.07" y2="19.07"/><line x1="2" y1="12" x2="6" y2="12"/><line x1="18" y1="12" x2="22" y2="12"/><line x1="4.93" y1="19.07" x2="7.76" y2="16.24"/><line x1="16.24" y1="7.76" x2="19.07" y2="4.93"/></svg>
+            <span>Downloading...</span>
+        `;
+        button.disabled = true;
+
+        fetch('/download-db')
+            .then(response => {
+                if (!response.ok) {
+                    return response.json().then(data => {
+                        throw new Error(data.error || 'Failed to download database');
+                    });
+                }
+                const contentDisposition = response.headers.get('Content-Disposition');
+                const filename = contentDisposition
+                    ? contentDisposition.split('filename=')[1]?.replace(/"/g, '')
+                    : 'api_keys_backup.db';
+                
+                return response.blob().then(blob => ({
+                    blob: blob,
+                    filename: filename
+                }));
+            })
+            .then(({ blob, filename }) => {
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.style.display = 'none';
+                a.href = url;
+                a.download = filename;
+                document.body.appendChild(a);
+                a.click();
+                window.URL.revokeObjectURL(url);
+                document.body.removeChild(a);
+                showNotification('Database downloaded successfully', 'success');
+            })
+            .catch(error => {
+                console.error('Error downloading database:', error);
+                showNotification(error.message, 'error');
+            })
+            .finally(() => {
+                button.innerHTML = originalContent;
+                button.disabled = false;
+            });
+    } catch (error) {
+        console.error('Error initiating download:', error);
+        showNotification('Failed to initiate download', 'error');
     }
 }
