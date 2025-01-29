@@ -1025,5 +1025,89 @@ def get_encryption_status():
         logger.error(f"Error getting encryption status: {str(e)}")
         return jsonify({'error': f'Failed to get encryption status: {str(e)}'}), 500
 
+@app.route('/api/keys/move', methods=['POST'])
+def move_key():
+    try:
+        data = request.get_json()
+        if not data or 'key_id' not in data or 'target_project_id' not in data:
+            return jsonify({'error': 'Missing required fields'}), 400
+            
+        key_id = data['key_id']
+        target_project_id = data['target_project_id']
+        is_copy = data.get('is_copy', False)
+        password = data.get('password')
+        
+        # Get the source key
+        key = APIKey.query.get_or_404(key_id)
+        
+        # If key is encrypted and no password provided, return error
+        if key.encrypted and not password:
+            return jsonify({'error': 'Password required for encrypted key'}), 400
+            
+        # If copying, create a new key
+        if is_copy:
+            # Get the maximum position for the target project
+            max_position = db.session.query(db.func.max(APIKey.position)).filter(
+                APIKey.project_id == target_project_id
+            ).scalar() or -1
+            
+            # Create a copy of the key
+            new_key = APIKey(
+                name=generate_unique_name(key.name, target_project_id),
+                key=key.key,
+                description=key.description,
+                used_with=key.used_with,
+                project_id=target_project_id,
+                position=max_position + 1,
+                encrypted=key.encrypted,
+                encryption_salt=key.encryption_salt
+            )
+            
+            db.session.add(new_key)
+            db.session.commit()
+            
+            logger.info(f"Successfully copied key {key.name} to project {target_project_id}")
+            return jsonify({
+                'message': 'Key copied successfully',
+                'key': new_key.to_dict()
+            }), 200
+            
+        else:
+            # Moving the key
+            old_project_id = key.project_id
+            
+            # Update positions in old project
+            if old_project_id is not None:
+                APIKey.query.filter(
+                    APIKey.project_id == old_project_id,
+                    APIKey.position > key.position
+                ).update({
+                    APIKey.position: APIKey.position - 1
+                })
+            
+            # Get max position in target project
+            max_position = db.session.query(db.func.max(APIKey.position)).filter(
+                APIKey.project_id == target_project_id
+            ).scalar() or -1
+            
+            # Update the key
+            key.project_id = target_project_id
+            key.position = max_position + 1
+            key.name = generate_unique_name(key.name, target_project_id)
+            
+            db.session.commit()
+            
+            logger.info(f"Successfully moved key {key.name} to project {target_project_id}")
+            return jsonify({
+                'message': 'Key moved successfully',
+                'key': key.to_dict()
+            }), 200
+            
+    except Exception as e:
+        db.session.rollback()
+        logger.error(f"Error moving/copying key: {str(e)}")
+        logger.exception("Full traceback:")
+        return jsonify({'error': f'Failed to move/copy key: {str(e)}'}), 500
+
 if __name__ == '__main__':
     app.run(host='localhost', port=5000, debug=True)# Main application file 

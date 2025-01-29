@@ -532,6 +532,45 @@
         </div>
     </div>
 
+    <!-- Key Move/Copy Modal -->
+    <div id="key-move-modal" class="modal">
+        <div class="modal-content">
+            <div class="import-header">
+                <div class="import-title">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M16 16v2a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2h2"/>
+                        <path d="M9 11v5"/>
+                        <path d="m12 13 3-3-3-3"/>
+                    </svg>
+                    <h2 class="text-xl font-semibold">Move/Copy Key</h2>
+                </div>
+            </div>
+            <div class="key-move-content">
+                <p class="key-move-message">Would you like to move or copy "<span id="key-move-name"></span>" to project "<span id="key-move-project"></span>"?</p>
+                <div class="key-move-options">
+                    <button class="btn btn-primary" onclick="executeKeyMove(true)">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <rect width="14" height="14" x="8" y="8" rx="2" ry="2"/>
+                            <path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/>
+                        </svg>
+                        Copy Key
+                    </button>
+                    <button class="btn btn-warning" onclick="executeKeyMove(false)">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M16 16v2a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2h2"/>
+                            <path d="M9 11v5"/>
+                            <path d="m12 13 3-3-3-3"/>
+                        </svg>
+                        Move Key
+                    </button>
+                    <button class="btn" onclick="hideKeyMoveModal()">
+                        Cancel
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Add script reference -->
     <script src="{{ url_for('static', filename='script.js') }}"></script>
 </body>

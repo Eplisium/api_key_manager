@@ -253,10 +253,9 @@ function renderProjects(projects) {
         <div class="project-item ${selectedProject === project.id ? 'active' : ''}" 
                 data-project-id="${project.id}"
                 data-position="${project.position}"
-                draggable="true"
                 ondragstart="handleProjectDragStart(event, ${project.id})"
-                ondragover="handleProjectDragOver(event)"
-                ondrop="handleProjectDrop(event)"
+                ondragover="handleDragOver(event)"
+                ondrop="handleDrop(event)"
                 ondragend="handleProjectDragEnd(event)"
                 onclick="selectProject(${project.id})"
                 oncontextmenu="showContextMenu(event, ${project.id})">
@@ -479,89 +478,169 @@ async function handleProjectSubmit(event) {
     }
 }
 
+// Update handleDragStart to include key data
 function handleDragStart(event, keyId) {
     draggedKey = keyId;
-    const keyCard = event.target;
-    draggedKeyRect = keyCard.getBoundingClientRect();
-    keyCard.classList.add('dragging');
+    const keyCard = event.target.closest('.key-card');
+    if (!keyCard) return;
+    
     event.dataTransfer.effectAllowed = 'move';
     event.dataTransfer.setData('text/plain', keyId);
+    
+    // Store the initial position and dimensions of the dragged card
+    draggedKeyRect = keyCard.getBoundingClientRect();
+    
+    // Add dragging styles
+    keyCard.classList.add('dragging');
+    keyCard.style.opacity = '0.5';
+    keyCard.style.transform = 'scale(0.95)';
+    
+    // Add droppable class to all project items except the current project
+    document.querySelectorAll('.project-item').forEach(item => {
+        if (item.dataset.projectId != selectedProject) {
+            item.classList.add('droppable');
+        }
+    });
 }
 
+// Update handleDragEnd to clean up
 function handleDragEnd(event) {
-    event.target.classList.remove('dragging');
+    const keyCard = event.target.closest('.key-card');
+    if (keyCard) {
+        keyCard.classList.remove('dragging');
+        keyCard.style.opacity = '';
+        keyCard.style.transform = '';
+    }
     draggedKey = null;
     draggedKeyRect = null;
+    
+    // Remove droppable and drag-over classes from all elements
+    document.querySelectorAll('.project-item, .key-card').forEach(item => {
+        item.classList.remove('droppable');
+        item.classList.remove('drag-over');
+    });
 }
 
+// Update handleDragOver for project items
 function handleDragOver(event) {
     event.preventDefault();
     event.dataTransfer.dropEffect = 'move';
     
-    // If we're dragging over a project item, just return
-    if (event.currentTarget.classList.contains('project-item')) {
-        event.currentTarget.classList.add('drag-over');
+    // If we're dragging over a project item
+    const projectItem = event.target.closest('.project-item');
+    if (projectItem) {
+        // Only show drag-over effect if it's a different project
+        if (projectItem.dataset.projectId != selectedProject) {
+            projectItem.classList.add('drag-over');
+        }
         return;
     }
     
+    // Handle drag over for key reordering within the same project
     const container = document.getElementById('keys-container');
-    const cards = Array.from(container.getElementsByClassName('key-card'));
-    const draggedElement = document.querySelector('.dragging');
+    const draggingCard = document.querySelector('.key-card.dragging');
+    if (!draggingCard) return;
     
-    if (!draggedElement) return;
+    const cards = [...container.querySelectorAll('.key-card:not(.dragging)')];
+    if (cards.length === 0) {
+        container.appendChild(draggingCard);
+        return;
+    }
     
-    // Only allow reordering within the same project view
-    if (selectedProject !== null) {
-        const closestCard = findClosestCard(event.clientY, cards.filter(card => !card.classList.contains('dragging')));
+    // Remove drag-over class from all cards first
+    cards.forEach(card => card.classList.remove('drag-over'));
+    
+    // Get mouse position relative to the container
+    const containerRect = container.getBoundingClientRect();
+    const mouseY = event.clientY - containerRect.top;
+    
+    // Calculate the position where the card should be inserted
+    let targetCard = null;
+    let insertAfter = false;
+    
+    for (let i = 0; i < cards.length; i++) {
+        const card = cards[i];
+        const cardRect = card.getBoundingClientRect();
+        const cardTop = cardRect.top - containerRect.top;
+        const cardBottom = cardTop + cardRect.height;
+        const cardMiddle = cardTop + (cardRect.height / 2);
         
-        if (closestCard) {
-            const rect = closestCard.getBoundingClientRect();
-            const threshold = rect.top + rect.height / 2;
-            
-            if (event.clientY < threshold) {
-                container.insertBefore(draggedElement, closestCard);
-            } else {
-                container.insertBefore(draggedElement, closestCard.nextSibling);
-            }
+        // If mouse is above the middle of this card
+        if (mouseY < cardMiddle) {
+            targetCard = card;
+            insertAfter = false;
+            break;
         }
+        // If mouse is below the middle of this card but above the next card
+        else if (i === cards.length - 1 || mouseY < cards[i + 1].getBoundingClientRect().top - containerRect.top) {
+            targetCard = card;
+            insertAfter = true;
+            break;
+        }
+    }
+    
+    if (targetCard) {
+        // Add drag-over effect
+        targetCard.classList.add('drag-over');
+        
+        // Calculate if we should insert before or after based on exact mouse position
+        const cardRect = targetCard.getBoundingClientRect();
+        const cardMiddleY = cardRect.top + cardRect.height / 2;
+        
+        if (insertAfter) {
+            container.insertBefore(draggingCard, targetCard.nextSibling);
+        } else {
+            container.insertBefore(draggingCard, targetCard);
+        }
+    } else {
+        // If we're above all cards, insert at the beginning
+        container.insertBefore(draggingCard, cards[0]);
     }
 }
 
-function findClosestCard(mouseY, cards) {
-    return cards.reduce((closest, card) => {
-        const rect = card.getBoundingClientRect();
-        const offset = mouseY - rect.top - rect.height / 2;
-        
-        if (closest === null || Math.abs(offset) < Math.abs(closest.offset)) {
-            return { element: card, offset: offset };
-        } else {
-            return closest;
-        }
-    }, null)?.element;
-}
-
-async function handleDrop(event, projectId = null) {
+// Update handleDrop to handle project drops
+async function handleDrop(event) {
     event.preventDefault();
-    event.currentTarget.classList.remove('drag-over');
     
-    const keyId = parseInt(event.dataTransfer.getData('text/plain'));
+    // Remove drag-over effects
+    document.querySelectorAll('.project-item, .key-card').forEach(item => {
+        item.classList.remove('drag-over');
+    });
+    
+    const keyId = event.dataTransfer.getData('text/plain');
+    if (!keyId) return;
+    
+    // Check if we're dropping on a project item
+    const projectItem = event.target.closest('.project-item');
+    if (projectItem) {
+        const targetProjectId = parseInt(projectItem.dataset.projectId);
+        
+        // Don't do anything if dropping onto the same project
+        if (targetProjectId === selectedProject) {
+            return;
+        }
+        
+        // Show move/copy modal
+        showKeyMoveModal(parseInt(keyId), targetProjectId);
+        return;
+    }
+    
+    // Handle reordering within current view
     const container = document.getElementById('keys-container');
-    const cards = Array.from(container.getElementsByClassName('key-card'));
     const droppedCard = document.querySelector(`[data-key-id="${keyId}"]`);
     
+    if (!droppedCard || !selectedProject) return;
+    
+    // Get all cards in their current order
+    const cards = [...container.querySelectorAll('.key-card')];
+    const newPosition = cards.indexOf(droppedCard);
+    
+    if (newPosition === -1) return;
+    
     try {
-        let newPosition = 0;
-        
-        // If dropping on a project item
-        if (projectId !== null) {
-            // Move to end of target project
-            newPosition = -1;  // Special value to indicate "move to end"
-        } else {
-            // Reordering within current view
-            if (!droppedCard || !selectedProject) return;
-            newPosition = cards.indexOf(droppedCard);
-            projectId = selectedProject;
-        }
+        // Add loading state
+        droppedCard.style.opacity = '0.7';
+        droppedCard.style.pointerEvents = 'none';
         
         const response = await fetch(`/keys/${keyId}/reorder`, {
             method: 'PATCH',
@@ -570,7 +649,7 @@ async function handleDrop(event, projectId = null) {
             },
             body: JSON.stringify({
                 new_position: newPosition,
-                project_id: projectId
+                project_id: selectedProject
             })
         });
         
@@ -579,16 +658,34 @@ async function handleDrop(event, projectId = null) {
             throw new Error(error.error || 'Failed to reorder key');
         }
         
-        // If we moved to a different project, switch to that project view
-        if (projectId !== selectedProject) {
-            selectProject(projectId);  // This will handle localStorage and UI updates
-        }
+        // Add success animation
+        droppedCard.style.transition = 'all 0.3s ease-in-out';
+        droppedCard.style.transform = 'scale(1.02)';
+        droppedCard.style.opacity = '1';
+        droppedCard.style.boxShadow = '0 0 0 2px var(--primary)';
         
-        // Refresh the keys to ensure correct order
+        // Reset the card style after animation
+        setTimeout(() => {
+            droppedCard.style.transform = '';
+            droppedCard.style.boxShadow = '';
+            droppedCard.style.pointerEvents = '';
+            
+            setTimeout(() => {
+                droppedCard.style.transition = '';
+            }, 300);
+        }, 300);
+        
+        // Refresh the keys display
         await fetchKeys();
     } catch (error) {
         console.error('Error reordering key:', error);
-        // Revert the UI to the original state
+        showNotification(error.message, 'error');
+        
+        // Reset the card style
+        droppedCard.style.opacity = '';
+        droppedCard.style.pointerEvents = '';
+        
+        // Refresh to ensure correct order is displayed
         await fetchKeys();
     }
 }
@@ -1758,14 +1855,49 @@ async function handlePasswordSubmit(event) {
     
     try {
         if (action === 'export') {
-            // Handle export with password
             performExport(currentKeyData.format, password);
             hidePasswordPrompt();
             return;
         }
         
-        // Handle other password-protected actions
-        // First decrypt the key
+        // Handle move/copy action for encrypted keys
+        if (action === 'move' && currentKeyData) {
+            // First decrypt the key
+            const decryptResponse = await fetch('/keys/decrypt', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    password: password,
+                    key_ids: [parseInt(keyId)]
+                })
+            });
+            
+            if (!decryptResponse.ok) {
+                throw new Error('Invalid password');
+            }
+            
+            // Perform the move/copy
+            await performKeyMove(
+                currentKeyData.keyId,
+                currentKeyData.targetProjectId,
+                currentKeyData.shouldCopy
+            );
+            
+            // Re-encrypt the key
+            await fetch('/keys/encrypt', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    password: password,
+                    key_ids: [parseInt(keyId)]
+                })
+            });
+            
+            hidePasswordPrompt();
+            return;
+        }
+        
+        // Handle other password-protected actions (existing code)
         const response = await fetch('/keys/decrypt', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -2186,8 +2318,26 @@ function handleEncryption(event) {
 
 // Update the refreshKeyCard function to show encryption status
 function refreshKeyCard(key) {
-    // ... existing code ...
+    const keyCard = document.querySelector(`[data-key-id="${key.id}"]`);
+    if (!keyCard) return;
+
+    // Create key header section
+    const keyHeader = document.createElement('div');
+    keyHeader.className = 'flex justify-between items-start mb-4';
     
+    // Create left side of header with name and project info
+    const leftHeader = document.createElement('div');
+    const keyName = document.createElement('h3');
+    keyName.className = 'font-semibold';
+    keyName.textContent = key.name;
+    leftHeader.appendChild(keyName);
+
+    // Add project info
+    const projectInfo = document.createElement('div');
+    projectInfo.className = 'text-xs text-gray-500 mb-1';
+    projectInfo.textContent = `Project: ${key.project ? key.project.name : 'None'}`;
+    leftHeader.appendChild(projectInfo);
+
     // Add encryption status indicator
     if (key.encrypted) {
         const encryptedBadge = document.createElement('div');
@@ -2199,8 +2349,191 @@ function refreshKeyCard(key) {
             </svg>
             <span>Encrypted</span>
         `;
-        keyHeader.appendChild(encryptedBadge);
+        leftHeader.appendChild(encryptedBadge);
+    }
+    keyHeader.appendChild(leftHeader);
+
+    // Create action buttons
+    const actions = document.createElement('div');
+    actions.className = 'flex gap-2';
+
+    // Copy button
+    const copyBtn = document.createElement('button');
+    copyBtn.className = 'btn-icon';
+    copyBtn.onclick = key.encrypted ? 
+        () => showPasswordPrompt('copy', key.id) : 
+        () => copyToClipboard(key.key);
+    copyBtn.innerHTML = `
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-copy">
+            <rect width="14" height="14" x="8" y="8" rx="2" ry="2"/>
+            <path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/>
+        </svg>
+        <span>Copy</span>
+    `;
+    actions.appendChild(copyBtn);
+
+    // Edit button
+    const editBtn = document.createElement('button');
+    editBtn.className = 'btn-icon';
+    editBtn.onclick = key.encrypted ? 
+        () => showPasswordPrompt('edit', key.id) : 
+        () => editKey(key.id);
+    editBtn.innerHTML = `
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-pencil">
+            <path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/>
+            <path d="m15 5 4 4"/>
+        </svg>
+        <span>Edit</span>
+    `;
+    actions.appendChild(editBtn);
+
+    // Delete button
+    const deleteBtn = document.createElement('button');
+    deleteBtn.className = 'btn-icon destructive';
+    deleteBtn.onclick = () => deleteKey(key.id);
+    deleteBtn.innerHTML = `
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-trash-2">
+            <path d="M3 6h18"/>
+            <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/>
+            <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/>
+            <line x1="10" x2="10" y1="11" y2="17"/>
+            <line x1="14" x2="14" y1="11" y2="17"/>
+        </svg>
+        <span>Delete</span>
+    `;
+    actions.appendChild(deleteBtn);
+    keyHeader.appendChild(actions);
+
+    // Update description and used_with sections
+    const description = document.createElement('div');
+    description.className = 'text-sm text-gray-600 mb-2';
+    description.textContent = key.description || '';
+
+    const usedWith = document.createElement('div');
+    usedWith.className = 'text-sm text-gray-500';
+    usedWith.textContent = `Used with: ${key.used_with || 'N/A'}`;
+
+    // Clear and update the key card
+    keyCard.innerHTML = '';
+    keyCard.appendChild(keyHeader);
+    keyCard.appendChild(description);
+    keyCard.appendChild(usedWith);
+
+    // Update drag and drop attributes
+    keyCard.draggable = true;
+    keyCard.ondragstart = (event) => handleDragStart(event, key.id);
+    keyCard.ondragend = handleDragEnd;
+    keyCard.oncontextmenu = (event) => showKeyContextMenu(event, key.encrypted ? '[ENCRYPTED]' : key.key, key.id, key.encrypted);
+}
+
+// Key Move Modal Functions
+function showKeyMoveModal(keyId, targetProjectId) {
+    // Get the key and target project
+    const keyCard = document.querySelector(`[data-key-id="${keyId}"]`);
+    const targetProject = document.querySelector(`[data-project-id="${targetProjectId}"]`);
+    
+    if (!keyCard || !targetProject) return;
+    
+    const keyName = keyCard.querySelector('.font-semibold').textContent;
+    const projectName = targetProject.querySelector('.project-name').textContent;
+    
+    document.getElementById('key-move-name').textContent = keyName;
+    document.getElementById('key-move-project').textContent = projectName;
+    
+    // Store the data for the move operation
+    currentKeyData = {
+        keyId: keyId,
+        targetProjectId: targetProjectId,
+        shouldCopy: false
+    };
+    
+    document.getElementById('key-move-modal').classList.add('show');
+}
+
+function hideKeyMoveModal() {
+    document.getElementById('key-move-modal').classList.remove('show');
+    currentKeyData = null;
+}
+
+async function executeKeyMove(shouldCopy = false) {
+    if (!currentKeyData) return;
+    
+    currentKeyData.shouldCopy = shouldCopy;
+    const keyCard = document.querySelector(`[data-key-id="${currentKeyData.keyId}"]`);
+    
+    if (!keyCard) {
+        showNotification('Error: Key not found', 'error');
+        hideKeyMoveModal();
+        return;
     }
     
-    // ... rest of the existing code ...
+    // Check if the key is encrypted
+    const isEncrypted = keyCard.querySelector('.key-badge.encrypted') !== null;
+    
+    try {
+        if (isEncrypted) {
+            // Show password prompt for encrypted keys
+            showPasswordPrompt('move', currentKeyData.keyId);
+        } else {
+            // Perform the move/copy directly for unencrypted keys
+            await performKeyMove(
+                currentKeyData.keyId,
+                currentKeyData.targetProjectId,
+                shouldCopy
+            );
+            hideKeyMoveModal();
+        }
+    } catch (error) {
+        console.error('Error moving/copying key:', error);
+        showNotification(error.message, 'error');
+        hideKeyMoveModal();
+    }
+}
+
+async function performKeyMove(keyId, targetProjectId, shouldCopy = false, password = null) {
+    try {
+        const response = await fetch('/keys/move', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                key_id: keyId,
+                target_project_id: targetProjectId,
+                is_copy: shouldCopy,
+                password: password
+            })
+        });
+        
+        if (!response.ok) {
+            const error = await response.json();
+            throw new Error(error.error || 'Failed to move/copy key');
+        }
+        
+        showNotification(
+            `Key ${shouldCopy ? 'copied' : 'moved'} successfully`,
+            'success'
+        );
+        
+        // Refresh the keys display
+        await fetchKeys();
+    } catch (error) {
+        console.error('Error moving/copying key:', error);
+        showNotification(error.message, 'error');
+    }
+}
+
+// Update the handleKeyDrop function
+async function handleKeyDrop(event, targetProjectId) {
+    event.preventDefault();
+    const keyId = event.dataTransfer.getData('text/plain');
+    
+    // Don't do anything if dropping onto the same project
+    const key = keys.find(k => k.id === keyId);
+    if (key && key.project_id === targetProjectId) {
+        return;
+    }
+    
+    // Show the move/copy modal
+    showKeyMoveModal(keyId, targetProjectId);
 }

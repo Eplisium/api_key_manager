@@ -115,17 +115,15 @@ body {
   border-radius: 0.5rem;
   padding: 1.5rem;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  transition: all 0.2s ease;
   border: 1px solid var(--border);
   cursor: grab;
+  position: relative;
+  z-index: 1;
 }
 
 [data-theme="dark"] .key-card {
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.4);
-}
-
-.key-card:hover {
-  transform: translateY(-2px);
 }
 
 .key-card:active {
@@ -133,13 +131,44 @@ body {
 }
 
 .key-card.dragging {
-  opacity: 0.8;
-  transform: scale(1.02);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  cursor: grabbing;
+  opacity: 0.5;
+  transform: scale(0.95);
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
+  z-index: 100;
+  background: var(--card);
+  border: 1px solid var(--primary);
+}
+
+[data-theme="dark"] .key-card.dragging {
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.4);
 }
 
 .key-card.drag-over {
+  transform: scale(1.02);
   border: 2px dashed var(--primary);
+  background: var(--hover);
+  transition: all 0.2s ease;
+}
+
+.key-card:not(.dragging):hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+[data-theme="dark"] .key-card:not(.dragging):hover {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+.project-item.droppable {
+  border: 2px dashed transparent;
+  transition: all 0.2s ease;
+}
+
+.project-item.droppable.drag-over {
+  border-color: var(--primary);
+  background-color: var(--hover);
+  transform: scale(1.02);
 }
 
 .modal {
@@ -2108,4 +2137,62 @@ select.input-field option {
 
 .key-context-value .key-badge {
     margin-top: 0;
+}
+
+/* Key Move Modal Styles */
+.key-move-content {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.key-move-message {
+    font-size: 1rem;
+    color: var(--foreground);
+    margin: 8px 0;
+}
+
+.key-move-options {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.key-move-options .btn {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+    justify-content: center;
+    padding: 12px;
+    font-size: 1rem;
+}
+
+#key-move-name,
+#key-move-project {
+    font-weight: 600;
+}
+
+.drag-placeholder {
+    height: 2px;
+    background-color: var(--primary);
+    margin: 8px 0;
+    transition: all 0.2s ease;
+    border-radius: 1px;
+    animation: placeholderPulse 1.5s ease-in-out infinite;
+}
+
+@keyframes placeholderPulse {
+    0% {
+        opacity: 0.6;
+        transform: scaleY(1);
+    }
+    50% {
+        opacity: 1;
+        transform: scaleY(1.5);
+    }
+    100% {
+        opacity: 0.6;
+        transform: scaleY(1);
+    }
 }
