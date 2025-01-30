@@ -1684,14 +1684,16 @@ select.input-field option {
 }
 
 .title-key {
+    user-select: none;
+    -webkit-user-select: none;
+    -moz-user-select: none;
     cursor: pointer;
     position: relative;
-    transition: all 0.2s ease;
 }
 
 .title-key:hover {
-    opacity: 0.8;
     text-shadow: 0 0 8px rgba(var(--primary-rgb), 0.4);
+    transition: all 0.2s ease;
 }
 
 .title-key::after {
