@@ -377,6 +377,8 @@ function showAllKeys() {
     localStorage.removeItem('selectedProject');
     document.getElementById('selected-project-name').textContent = 'All Projects';
     document.querySelectorAll('.project-item').forEach(item => item.classList.remove('active'));
+    // Add this line to hide the import button
+    document.getElementById('import-env-btn').style.display = 'none';
     fetchKeys();
 }
 
