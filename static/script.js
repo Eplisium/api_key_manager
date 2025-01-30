@@ -34,9 +34,27 @@ function showContextMenu(event, projectId) {
         projectNameDisplay.textContent = projectName;
     }
     
-    // Position the menu at cursor
-    contextMenu.style.left = `${event.clientX}px`;
-    contextMenu.style.top = `${event.clientY}px`;
+    // Position the menu at cursor with boundary checks
+    const menuWidth = contextMenu.offsetWidth;
+    const menuHeight = contextMenu.offsetHeight;
+    const viewportWidth = window.innerWidth;
+    const viewportHeight = window.innerHeight;
+    
+    let left = event.clientX;
+    let top = event.clientY;
+    
+    // Adjust horizontal position if menu would go off-screen
+    if (left + menuWidth > viewportWidth) {
+        left = viewportWidth - menuWidth - 10;
+    }
+    
+    // Adjust vertical position if menu would go off-screen
+    if (top + menuHeight > viewportHeight) {
+        top = viewportHeight - menuHeight - 10;
+    }
+    
+    contextMenu.style.left = `${left}px`;
+    contextMenu.style.top = `${top}px`;
     contextMenu.classList.add('show');
     
     // Add click listener to close menu when clicking outside
