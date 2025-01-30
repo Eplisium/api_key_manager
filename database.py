@@ -68,16 +68,20 @@ class APIKey(db.Model):
         if not self.encrypted:
             raise ValueError("Key is not encrypted")
             
-        key, _ = generate_key(password, self.encryption_salt)
-        f = Fernet(key)
-        encrypted_data = base64.b64decode(self.key.encode('utf-8'))
         try:
+            # Ensure salt is bytes
+            salt = bytes(self.encryption_salt) if isinstance(self.encryption_salt, (bytearray, memoryview)) else self.encryption_salt
+            
+            key, _ = generate_key(password, salt)
+            f = Fernet(key)
+            encrypted_data = base64.b64decode(self.key.encode('utf-8'))
             decrypted_data = f.decrypt(encrypted_data)
             self.key = decrypted_data.decode('utf-8')
             self.encrypted = False
             self.encryption_salt = None
         except Exception as e:
-            raise ValueError("Invalid password or corrupted data") from e
+            # Add more specific error logging
+            raise ValueError(f"Decryption failed: {str(e)}") from e
 
     def to_dict(self):
         return {

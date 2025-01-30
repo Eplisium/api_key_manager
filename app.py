@@ -572,81 +572,48 @@ def check_db():
 @app.route('/export', methods=['GET'])
 def export_keys():
     try:
-        # Get export format and project_id from query params
+        # Get parameters from query args
         export_format = request.args.get('format', 'env')
         project_id = request.args.get('project_id', type=int)
-        password = request.args.get('password')
+        password = request.args.get('password')  # Get password from query params
         
-        # Build query
+        # Get keys with decryption
         query = APIKey.query
         if project_id is not None:
             query = query.filter_by(project_id=project_id)
-            project_name = Project.query.get_or_404(project_id).name
-        
-        # Order by position within each project
-        keys = query.order_by(APIKey.project_id, APIKey.position).all()
-        
-        if not keys:
-            return jsonify({'error': 'No keys found to export'}), 404
             
-        # If we have encrypted keys and no password provided, return error
-        encrypted_keys = [key for key in keys if key.encrypted]
-        if encrypted_keys and not password:
-            return jsonify({'error': 'Password required to export encrypted keys'}), 400
-            
-        # If we have a password and encrypted keys, decrypt them temporarily
-        if encrypted_keys and password:
+        keys = query.all()
+        
+        decrypted_keys = []
+        failed_decrypts = []
+        
+        for key in keys:
             try:
-                # Create temporary copies of encrypted keys to avoid modifying the database
-                temp_keys = []
-                for key in keys:
-                    if key.encrypted:
-                        # Create a copy of the key
-                        temp_key = APIKey(
-                            name=key.name,
-                            key=key.key,
-                            encrypted=key.encrypted
-                        )
-                        # Decrypt the temporary key
-                        temp_key.decrypt_key(password)
-                        temp_keys.append(temp_key)
-                    else:
-                        temp_keys.append(key)
-                # Use the temporary keys for export
-                keys = temp_keys
+                if key.encrypted:
+                    key.decrypt_key(password)
+                decrypted_keys.append(key.to_dict())
+                if key.encrypted:  # Re-encrypt immediately after export
+                    key.encrypt_key(password)
             except Exception as e:
-                logger.error(f"Error decrypting keys for export: {str(e)}")
-                return jsonify({'error': 'Invalid password or decryption failed'}), 400
-            
-        # Prepare the output based on format
-        if export_format == 'json':
-            output = json.dumps({key.name: key.key for key in keys}, indent=2)
-            mimetype = 'application/json'
-            filename = f"api_keys_{project_name if project_id else 'all'}.json"
-        elif export_format == 'yaml':
-            output = yaml.dump({key.name: key.key for key in keys}, default_flow_style=False)
-            mimetype = 'application/x-yaml'
-            filename = f"api_keys_{project_name if project_id else 'all'}.yaml"
-        else:  # .env format
-            output = '\n'.join([f"{key.name}={key.key}" for key in keys])
-            mimetype = 'text/plain'
-            filename = f"api_keys_{project_name if project_id else 'all'}.env"
-            
-        # Create in-memory file
-        buffer = io.BytesIO()
-        buffer.write(output.encode('utf-8'))
-        buffer.seek(0)
+                failed_decrypts.append({
+                    'id': key.id,
+                    'name': key.name,
+                    'error': str(e)
+                })
         
-        return send_file(
-            buffer,
-            mimetype=mimetype,
-            as_attachment=True,
-            download_name=filename
-        )
+        if failed_decrypts:
+            return jsonify({
+                'error': 'Partial decryption failure',
+                'failed': failed_decrypts,
+                'successful': [k['name'] for k in decrypted_keys]
+            }), 207  # Multi-status code
+            
+        # Proceed with export formatting
+        return generate_export_file(decrypted_keys, export_format)
         
     except Exception as e:
-        logger.error(f"Error exporting keys: {str(e)}")
-        return jsonify({'error': f'Failed to export keys: {str(e)}'}), 500
+        logger.error(f"Export failed: {str(e)}")
+        return jsonify({'error': str(e)}), 400
 
 @app.route('/download-db', methods=['GET'])
 def download_database():
@@ -1108,6 +1075,43 @@ def move_key():
         logger.error(f"Error moving/copying key: {str(e)}")
         logger.exception("Full traceback:")
         return jsonify({'error': f'Failed to move/copy key: {str(e)}'}), 500
+
+def generate_export_file(keys, export_format):
+    """Generate the export file based on format."""
+    try:
+        project_name = "all"
+        if keys and keys[0].get('project'):
+            project_name = keys[0]['project']['name'].replace(' ', '_')
+
+        output = ""
+        mimetype = 'text/plain'
+        filename = f"api_keys_{project_name}.env"
+
+        if export_format == 'json':
+            output = json.dumps({k['name']: k['key'] for k in keys}, indent=2)
+            mimetype = 'application/json'
+            filename = f"api_keys_{project_name}.json"
+        elif export_format == 'yaml':
+            output = yaml.dump({k['name']: k['key'] for k in keys}, default_flow_style=False)
+            mimetype = 'application/x-yaml'
+            filename = f"api_keys_{project_name}.yaml"
+        else:  # .env format
+            output = '\n'.join([f"{k['name']}={k['key']}" for k in keys])
+
+        # Create in-memory file
+        buffer = io.BytesIO()
+        buffer.write(output.encode('utf-8'))
+        buffer.seek(0)
+
+        return send_file(
+            buffer,
+            mimetype=mimetype,
+            as_attachment=True,
+            download_name=filename
+        )
+        
+    except Exception as e:
+        raise ValueError(f"Export generation failed: {str(e)}")
 
 if __name__ == '__main__':
     app.run(host='localhost', port=5000, debug=True)# Main application file 

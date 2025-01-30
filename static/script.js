@@ -1211,20 +1211,22 @@ async function exportKeys(format) {
     }
 }
 
-function performExport(format, password = null) {
-    const queryParams = new URLSearchParams({
-        format: format
-    });
-    
-    if (selectedProject) {
-        queryParams.append('project_id', selectedProject);
+async function performExport(format, password = null) {
+    try {
+        const params = new URLSearchParams({
+            format: format,
+            project_id: selectedProject || '',
+            password: password || ''
+        });
+
+        const url = `/export?${params.toString()}`;
+        
+        // Open in new tab to avoid CORS issues
+        window.open(url, '_blank');
+        
+    } catch (error) {
+        showNotification(`Export failed: ${error.message}`, 'error');
     }
-    
-    if (password) {
-        queryParams.append('password', password);
-    }
-    
-    window.location.href = `/export?${queryParams.toString()}`;
 }
 
 function handleProjectDragStart(event, projectId) {
