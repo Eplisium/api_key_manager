@@ -1448,7 +1448,7 @@ select.input-field option {
 
 .word-select-btn.active {
     background: var(--primary);
-    color: white;
+    color: gray;
     border-color: var(--primary);
 }
 
