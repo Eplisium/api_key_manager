@@ -2277,3 +2277,35 @@ select.input-field option {
         transform: scaleY(1);
     }
 }
+
+/* Selected Project Badge */
+.selected-project-badge {
+    background: var(--hover);
+    color: var(--foreground);
+    padding: 0.5rem 1rem;
+    border-radius: 0.75rem;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.75rem;
+    font-size: 0.95rem;
+    border: 1px solid var(--border);
+    transition: all 0.2s ease;
+    max-width: 300px;
+}
+
+.selected-project-badge .badge-label {
+    color: var(--muted);
+    font-weight: 500;
+}
+
+.selected-project-badge .project-name {
+    font-weight: 600;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* When sidebar is collapsed */
+.sidebar.collapsed + .main-content .selected-project-badge {
+    margin-left: 40px;
+}

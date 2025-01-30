@@ -375,11 +375,8 @@ function renderKeys(keys) {
 function showAllKeys() {
     selectedProject = null;
     localStorage.removeItem('selectedProject');
-    document.querySelectorAll('.project-item').forEach(item => {
-        item.classList.remove('active');
-    });
-    // Hide import button when showing all keys
-    document.getElementById('import-env-btn').style.display = 'none';
+    document.getElementById('selected-project-name').textContent = 'All Projects';
+    document.querySelectorAll('.project-item').forEach(item => item.classList.remove('active'));
     fetchKeys();
 }
 
@@ -715,8 +712,16 @@ async function selectProject(projectId) {
         item.classList.remove('active');
         if (item.dataset.projectId == projectId) {
             item.classList.add('active');
+            // Update header display
+            const projectName = item.querySelector('.project-name').textContent;
+            document.getElementById('selected-project-name').textContent = projectName;
         }
     });
+    
+    if (!projectId) {
+        document.getElementById('selected-project-name').textContent = 'All Projects';
+    }
+    
     // Show/hide import button based on project selection
     document.getElementById('import-env-btn').style.display = projectId ? 'inline-flex' : 'none';
     fetchKeys();
@@ -892,13 +897,14 @@ document.addEventListener('DOMContentLoaded', async () => {
     const savedProject = localStorage.getItem('selectedProject');
     if (savedProject) {
         selectedProject = parseInt(savedProject);
-        document.querySelectorAll('.project-item').forEach(item => {
-            item.classList.toggle('active', item.dataset.projectId == selectedProject);
-        });
-        // Show import button if a project is selected
+        const projectItem = document.querySelector(`.project-item[data-project-id="${selectedProject}"]`);
+        if (projectItem) {
+            projectItem.classList.add('active');
+            const projectName = projectItem.querySelector('.project-name').textContent;
+            document.getElementById('selected-project-name').textContent = projectName;
+        }
         document.getElementById('import-env-btn').style.display = 'inline-flex';
     } else {
-        // Hide import button if no project is selected
         document.getElementById('import-env-btn').style.display = 'none';
     }
     
