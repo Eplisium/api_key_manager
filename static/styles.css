@@ -47,6 +47,7 @@ body {
   background-color: var(--background);
   color: var(--foreground);
   min-height: 100vh;
+  overflow: hidden;
 }
 
 .container {
@@ -430,6 +431,7 @@ select.input-field option {
   margin-bottom: 1rem;
   scrollbar-width: thin;
   scrollbar-color: var(--border) transparent;
+  max-height: calc(100vh - 200px);
 }
 
 .projects-container::-webkit-scrollbar {
@@ -550,7 +552,8 @@ select.input-field option {
   margin-left: 280px;
   padding: 2rem;
   transition: all 0.3s ease;
-  min-height: 100vh;
+  height: 100vh;
+  overflow-y: auto;
 }
 
 .main-content.expanded {
@@ -771,9 +774,9 @@ select.input-field option {
 
 /* Drag and Drop Styles */
 #keys-container {
-  min-height: 100px;
-  padding: 1rem;
-  transition: background-color 0.2s ease;
+  overflow-y: auto;
+  max-height: calc(100vh - 200px);
+  padding-bottom: 2rem;
 }
 
 #keys-container.drag-over {
