@@ -349,7 +349,7 @@ select.input-field option {
   border-radius: 0.5rem;
   font-size: 0.875rem;
   white-space: nowrap;
-  z-index: 1000;
+  z-index: 2000;
   opacity: 0;
   transition: opacity 0.2s ease;
   pointer-events: none;
@@ -413,6 +413,7 @@ select.input-field option {
   flex-direction: column;
   transition: all 0.3s ease;
   box-shadow: 2px 0 8px rgba(0, 0, 0, 0.05);
+  z-index: 1500;
 }
 
 .sidebar-header {
@@ -529,7 +530,7 @@ select.input-field option {
   border-radius: 0.5rem;
   font-size: 0.875rem;
   white-space: nowrap;
-  z-index: 1000;
+  z-index: 2000;
   opacity: 0;
   transition: opacity 0.2s ease;
   pointer-events: none;
