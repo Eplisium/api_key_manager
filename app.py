@@ -24,8 +24,8 @@ if not os.path.exists(app.instance_path):
 # Use instance path for database
 db_path = os.path.join(app.instance_path, 'keys.db')
 app.config['SQLALCHEMY_DATABASE_URI'] = f'sqlite:///{db_path}'
-app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-app.secret_key = 'your-secret-key-here'
+app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = True
+app.secret_key = os.environ.get('FLASK_SECRET_KEY', 'dev-fallback-secret')
 
 db.init_app(app)
 migrate = Migrate(app, db)
