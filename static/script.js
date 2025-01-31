@@ -116,30 +116,29 @@ function showKeyContextMenu(event, keyValue, keyId, isEncrypted) {
     keyDisplay.innerHTML = ''; // Clear previous content
     
     if (isEncrypted) {
+        // For encrypted keys, show a placeholder, encrypted badge, and password input
         keyDisplay.innerHTML = `
-            <div class="encrypted-key-header mb-2">
-                <div class="flex items-center gap-2">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <div class="encrypted-key-header">
+                <span>[ENCRYPTED]</span>
+                <div class="key-badge encrypted">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                         <rect width="18" height="11" x="3" y="11" rx="2" ry="2"/>
                         <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
                     </svg>
-                    <span class="text-sm font-medium">Encrypted Key</span>
+                    <span>Encrypted</span>
                 </div>
             </div>
-            <div class="password-input-container space-y-2">
-                <input type="password" 
-                       class="password-input w-full" 
-                       placeholder="Enter password..."
-                       onkeydown="handlePasswordKeyDown(event, ${keyId})">
-                <button class="btn btn-secondary w-full text-sm py-1" onclick="viewEncryptedKey(${keyId})">
-                    Decrypt & View
+            <div class="password-input-container">
+                <input type="password" class="password-input" placeholder="Enter password to view" onkeydown="handlePasswordKeyDown(event, ${keyId})">
+                <button class="view-key-btn" onclick="viewEncryptedKey(${keyId})">
                     <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                         <path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/>
                         <circle cx="12" cy="12" r="3"/>
                     </svg>
+                    View
                 </button>
             </div>
-            <div class="decrypted-value mt-2 p-2 bg-success-bg text-success rounded text-sm" style="display: none;"></div>
+            <div class="decrypted-value" style="display: none;"></div>
         `;
     } else {
         // For unencrypted keys, show the actual value
