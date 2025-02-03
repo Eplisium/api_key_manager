@@ -2314,3 +2314,12 @@ select.input-field option {
 .sidebar.collapsed + .main-content .selected-project-badge {
     margin-left: 40px;
 }
+
+/* 
+   Improved styling for key context menu to ensure the 
+   password input and view button are properly contained.
+*/
+#key-context-menu {
+    min-width: 240px;
+    max-width: 320px;
+}
