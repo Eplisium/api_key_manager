@@ -2478,9 +2478,12 @@ function showKeyMoveModal(keyId, targetProjectId) {
     document.getElementById('key-move-modal').classList.add('show');
 }
 
-function hideKeyMoveModal() {
+function hideKeyMoveModal(clearData = true) {
     document.getElementById('key-move-modal').classList.remove('show');
-    currentKeyData = null;
+    // Only clear currentKeyData if clearData is true.
+    if (clearData) {
+        currentKeyData = null;
+    }
 }
 
 async function executeKeyMove(shouldCopy = false) {
@@ -2500,7 +2503,8 @@ async function executeKeyMove(shouldCopy = false) {
     
     try {
         if (isEncrypted) {
-            // Show password prompt for encrypted keys
+            // Hide the key-move modal WITHOUT clearing currentKeyData so the password prompt can use it.
+            hideKeyMoveModal(false);
             showPasswordPrompt('move', currentKeyData.keyId);
         } else {
             // Perform the move/copy directly for unencrypted keys
@@ -2520,7 +2524,7 @@ async function executeKeyMove(shouldCopy = false) {
 
 async function performKeyMove(keyId, targetProjectId, shouldCopy = false, password = null) {
     try {
-        const response = await fetch('/keys/move', {
+        const response = await fetch('/api/keys/move', { // Updated endpoint URL to match backend route
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
@@ -2534,8 +2538,16 @@ async function performKeyMove(keyId, targetProjectId, shouldCopy = false, passwo
         });
         
         if (!response.ok) {
-            const error = await response.json();
-            throw new Error(error.error || 'Failed to move/copy key');
+            const contentType = response.headers.get("content-type");
+            let errorMessage = 'Failed to move/copy key';
+            if (contentType && contentType.indexOf("application/json") !== -1) {
+                const errorJson = await response.json();
+                errorMessage = errorJson.error || errorMessage;
+            } else {
+                const errorText = await response.text();
+                errorMessage = errorText || errorMessage;
+            }
+            throw new Error(errorMessage);
         }
         
         showNotification(
