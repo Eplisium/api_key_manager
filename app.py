@@ -1007,10 +1007,6 @@ def move_key():
         # Get the source key
         key = APIKey.query.get_or_404(key_id)
         
-        # If key is encrypted and no password provided, return error
-        if key.encrypted and not password:
-            return jsonify({'error': 'Password required for encrypted key'}), 400
-            
         # If copying, create a new key
         if is_copy:
             # Get the maximum position for the target project

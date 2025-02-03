@@ -2498,23 +2498,14 @@ async function executeKeyMove(shouldCopy = false) {
         return;
     }
     
-    // Check if the key is encrypted
-    const isEncrypted = keyCard.querySelector('.key-badge.encrypted') !== null;
-    
+    // New code: always perform the move/copy directly.
     try {
-        if (isEncrypted) {
-            // Hide the key-move modal WITHOUT clearing currentKeyData so the password prompt can use it.
-            hideKeyMoveModal(false);
-            showPasswordPrompt('move', currentKeyData.keyId);
-        } else {
-            // Perform the move/copy directly for unencrypted keys
-            await performKeyMove(
-                currentKeyData.keyId,
-                currentKeyData.targetProjectId,
-                shouldCopy
-            );
-            hideKeyMoveModal();
-        }
+        await performKeyMove(
+            currentKeyData.keyId,
+            currentKeyData.targetProjectId,
+            shouldCopy
+        );
+        hideKeyMoveModal();
     } catch (error) {
         console.error('Error moving/copying key:', error);
         showNotification(error.message, 'error');
