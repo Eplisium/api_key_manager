@@ -35,6 +35,7 @@ ENV/
 instance/
 *.db
 api_key_manager.log
+todo.txt
 
 # Keep
 !logging.conf 
