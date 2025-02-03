@@ -2323,3 +2323,9 @@ select.input-field option {
     min-width: 240px;
     max-width: 320px;
 }
+
+/* NEW: Apply rainbow animation to the selected project badge project name */
+.selected-project-badge .project-name.rainbow {
+    animation: rainbow 3s linear infinite;
+    animation-delay: 0s;
+}

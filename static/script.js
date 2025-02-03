@@ -99,6 +99,34 @@ function deleteProjectFromMenu(event) {
     hideContextMenu();
 }
 
+// NEW: Toggle Rainbow Effect for Title and Project Badge
+function toggleRainbow(event) {
+    // Only proceed if the shift key is pressed
+    if (!event.shiftKey) return;
+    
+    const title = document.querySelector('.title');
+    const projectBadge = document.getElementById('selected-project-name');
+    
+    // Toggle the rainbow animation on the title element
+    title.classList.toggle('rainbow');
+    
+    if (title.classList.contains('rainbow')) {
+        // Remove any inline custom colors from title spans
+        document.querySelectorAll('.title span').forEach(span => {
+            span.style.color = '';
+            localStorage.removeItem(`titleColor_${span.className.split('-')[1]}`);
+        });
+        // Also clear inline color on the project badge and add rainbow animation
+        projectBadge.style.color = '';
+        projectBadge.classList.add('rainbow');
+    } else {
+        projectBadge.classList.remove('rainbow');
+    }
+    
+    // Save the current rainbow state
+    localStorage.setItem('titleRainbow', title.classList.contains('rainbow'));
+}
+
 // Add these new functions for key context menu
 let activeKeyValue = null;
 let activeKeyId = null;
@@ -890,9 +918,25 @@ document.addEventListener('DOMContentLoaded', async () => {
     await fetchProjects();
     
     // Restore rainbow state
-    const titleRainbow = localStorage.getItem('titleRainbow') === 'true';
-    if (titleRainbow) {
-        document.querySelector('.title').classList.add('rainbow');
+    const wasRainbow = localStorage.getItem('titleRainbow') === 'true';
+    const title = document.querySelector('.title');
+    const projectBadge = document.getElementById('selected-project-name'); // NEW: get project badge
+    if (wasRainbow) {
+        title.classList.add('rainbow');
+        projectBadge.classList.add('rainbow'); // NEW: persist rainbow on project badge
+        // Clear any saved custom colors
+        document.querySelectorAll('.title span').forEach(span => {
+            span.style.color = '';
+            localStorage.removeItem(`titleColor_${span.className.split('-')[1]}`);
+        });
+    } else {
+        // Restore individual word colors if rainbow was not active
+        ['api', 'key', 'manager'].forEach(word => {
+            const savedColor = localStorage.getItem(`titleColor_${word}`);
+            if (savedColor) {
+                document.querySelector(`.title-${word}`).style.color = savedColor;
+            }
+        });
     }
     
     // Restore selected project from localStorage
@@ -911,6 +955,22 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
     
     await fetchKeys();
+    
+    // NEW: Ensure the title has the expected structure for rainbow animation
+    if (title && !title.innerHTML.includes('title-api')) {
+        title.innerHTML = 
+            '<span class="title-api">API</span> ' +
+            '<span class="title-key key-text" onclick="toggleRainbow(event)">Key</span> ' +
+            '<span class="title-manager">Manager</span>';
+    }
+    
+    // Existing restoration of custom colors
+    ['api', 'key', 'manager'].forEach(word => {
+        const savedColor = localStorage.getItem(`titleColor_${word}`);
+        if (savedColor) {
+            document.querySelector(`.title-${word}`).style.color = savedColor;
+        }
+    });
 });
 
 async function handleEnvFileUpload(event) {
@@ -1319,18 +1379,22 @@ document.querySelector('.title').innerHTML = '<span class="title-api">API</span>
 document.querySelector('.title-key').addEventListener('click', (event) => {
     if (event.shiftKey) {
         const title = document.querySelector('.title');
+        const projectBadge = document.getElementById('selected-project-name'); // <<< NEW: get the project badge element
         title.classList.toggle('rainbow');
         
-        // Remove any custom colors when rainbow is active
         if (title.classList.contains('rainbow')) {
             document.querySelectorAll('.title span').forEach(span => {
                 span.style.color = '';
-                // Clear saved colors when rainbow is enabled
                 localStorage.removeItem(`titleColor_${span.className.split('-')[1]}`);
             });
+            // >>> NEW: also remove any inline color from the project badge and add rainbow class
+            projectBadge.style.color = '';
+            projectBadge.classList.add('rainbow');
+        } else {
+            projectBadge.classList.remove('rainbow');
         }
         
-        // Save rainbow state
+        // Save rainbow state for persistence
         localStorage.setItem('titleRainbow', title.classList.contains('rainbow'));
     }
 });
@@ -1367,7 +1431,7 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 function resetTitleColor() {
-    // Remove any custom colors and rainbow effect
+    // Remove any custom colors and rainbow effect from title
     const title = document.querySelector('.title');
     title.classList.remove('rainbow');
     document.querySelectorAll('.title span').forEach(span => {
@@ -1385,10 +1449,13 @@ function resetTitleColor() {
     document.getElementById('rgb-g').value = rgb.g;
     document.getElementById('rgb-b').value = rgb.b;
 
-    // Update preview
+    // Update preview text colors
     document.querySelectorAll('.preview-text span').forEach(span => {
         span.style.color = defaultColor;
     });
+    
+    // >>> NEW: Also reset project badge color to the default
+    document.getElementById('selected-project-name').style.color = defaultColor;
 }
 
 let selectedWord = 'all';
@@ -1465,10 +1532,11 @@ function applyCustomColor() {
     const color = document.getElementById('color-wheel').value;
     const title = document.querySelector('.title');
     
-    // Remove rainbow effect
+    // Remove rainbow effect from title and project name
     title.classList.remove('rainbow');
+    document.getElementById('selected-project-name').classList.remove('rainbow');
     localStorage.setItem('titleRainbow', 'false');
-
+    
     if (selectedWord === 'all') {
         document.querySelectorAll('.title span').forEach(span => {
             span.style.color = color;
@@ -1479,7 +1547,9 @@ function applyCustomColor() {
         targetSpan.style.color = color;
         localStorage.setItem(`titleColor_${selectedWord}`, color);
     }
-
+    // >>> NEW: Sync selected project badge color with applied color
+    document.getElementById('selected-project-name').style.color = color;
+    
     hideColorPickerModal();
 }
 
