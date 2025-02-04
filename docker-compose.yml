@@ -1,0 +1,15 @@
+version: '3.8'
+
+services:
+  web:
+    build: .
+    ports:
+      - "5000:5000"
+    volumes:
+      - ./instance:/app/instance
+    environment:
+      - FLASK_APP=app.py
+      - FLASK_ENV=development
+      # You should change this in production
+      - FLASK_SECRET_KEY=${FLASK_SECRET_KEY:-dev-fallback-secret}
+    restart: unless-stopped 
