@@ -581,8 +581,9 @@ def export_keys():
         query = APIKey.query
         if project_id is not None:
             query = query.filter_by(project_id=project_id)
-            
-        keys = query.all()
+        
+        # Ensure keys are ordered by project and position
+        keys = query.order_by(APIKey.project_id, APIKey.position).all()
         
         decrypted_keys = []
         failed_decrypts = []
@@ -609,11 +610,11 @@ def export_keys():
             }), 207  # Multi-status code
             
         # Proceed with export formatting
-        return generate_export_file(decrypted_keys, export_format)
+        return generate_export_file(decrypted_keys, export_format, project_id)
         
     except Exception as e:
-        logger.error(f"Export failed: {str(e)}")
-        return jsonify({'error': str(e)}), 400
+        logger.error(f"Error exporting keys: {str(e)}")
+        return jsonify({'error': f'Failed to export keys: {str(e)}'}), 500
 
 @app.route('/download-db', methods=['GET'])
 def download_database():
@@ -664,20 +665,26 @@ def reorder_project(project_id):
             return jsonify({'error': 'New position is required'}), 400
 
         project = Project.query.get_or_404(project_id)
-        new_position = data['new_position']
+        new_position = max(0, int(data['new_position']))  # Ensure non-negative position
         old_position = project.position
 
         logger.info(f"Reordering project {project.name} from position {old_position} to {new_position}")
 
         with db.session.begin_nested():  # Create a savepoint
-            if new_position >= 0:
+            # Get total number of projects
+            total_projects = Project.query.count()
+            # Ensure new_position is within bounds
+            new_position = min(new_position, total_projects - 1)
+
+            if new_position != old_position:
+                # First update the positions of other projects
                 if new_position > old_position:
                     # Moving forward: update positions of projects between old and new position
                     affected = Project.query.filter(
                         Project.position <= new_position,
                         Project.position > old_position,
                         Project.id != project_id
-                    ).update({Project.position: Project.position - 1})
+                    ).update({Project.position: Project.position - 1}, synchronize_session=False)
                     logger.info(f"Updated {affected} projects moving forward")
                 else:
                     # Moving backward: update positions of projects between new and old position
@@ -685,18 +692,19 @@ def reorder_project(project_id):
                         Project.position >= new_position,
                         Project.position < old_position,
                         Project.id != project_id
-                    ).update({Project.position: Project.position + 1})
+                    ).update({Project.position: Project.position + 1}, synchronize_session=False)
                     logger.info(f"Updated {affected} projects moving backward")
 
-            project.position = new_position
-            db.session.flush()  # Ensure all position updates are applied
+                # Then update the position of the moved project
+                project.position = new_position
+                db.session.flush()  # Ensure all position updates are applied
 
-            # Normalize positions
-            projects = Project.query.order_by(Project.position).all()
-            for i, p in enumerate(projects):
-                if p.position != i:
-                    p.position = i
-                    logger.info(f"Fixed position for project {p.name}: {p.position} -> {i}")
+                # Finally normalize all positions to ensure they are sequential and start from 0
+                projects = Project.query.order_by(Project.position).all()
+                for i, p in enumerate(projects):
+                    if p.position != i:
+                        p.position = i
+                        logger.info(f"Fixed position for project {p.name}: {p.position} -> {i}")
 
         db.session.commit()
         logger.info(f"Successfully reordered project {project.name} to position {new_position}")
@@ -1072,29 +1080,59 @@ def move_key():
         logger.exception("Full traceback:")
         return jsonify({'error': f'Failed to move/copy key: {str(e)}'}), 500
 
-def generate_export_file(keys, export_format):
+def generate_export_file(keys, export_format, project_id=None):
     """Generate the export file based on format."""
     try:
-        project_name = "all"
-        if keys and keys[0].get('project'):
-            project_name = keys[0]['project']['name'].replace(' ', '_')
+        # Determine the project name for the filename
+        if project_id:
+            if keys and keys[0].get('project'):
+                project_name = keys[0]['project']['name'].replace(' ', '_')
+            else:
+                project_name = f"project_{project_id}"
+        else:
+            project_name = "all"
 
         output = ""
         mimetype = 'text/plain'
         filename = f"api_keys_{project_name}.env"
 
         if export_format == 'json':
+            # JSON export: formatted with indents for readability
             output = json.dumps({k['name']: k['key'] for k in keys}, indent=2)
             mimetype = 'application/json'
             filename = f"api_keys_{project_name}.json"
         elif export_format == 'yaml':
+            # YAML export: formatted in block style for clarity
             output = yaml.dump({k['name']: k['key'] for k in keys}, default_flow_style=False)
             mimetype = 'application/x-yaml'
             filename = f"api_keys_{project_name}.yaml"
         else:  # .env format
-            output = '\n'.join([f"{k['name']}={k['key']}" for k in keys])
+            # Beautify .env output:
+            # If no specific project is provided (exporting all keys), group by project.
+            if project_id is None:
+                from collections import defaultdict
+                grouped_keys = defaultdict(list)
+                for k in keys:
+                    # Use "Unassigned" if no project info is available
+                    proj_name = "Unassigned"
+                    if k.get('project') and k['project'].get('name'):
+                        proj_name = k['project']['name']
+                    grouped_keys[proj_name].append(k)
+                lines = []
+                # Sort projects alphabetically for consistency
+                for proj in sorted(grouped_keys.keys()):
+                    lines.append(f"# Project: {proj}")  # Comment header for the project group
+                    for key in grouped_keys[proj]:
+                        lines.append(f"{key['name']}={key['key']}")
+                    lines.append("")  # Add a blank line between project groups
+                output = "\n".join(lines)
+            else:
+                # For a single project, add a header comment then list keys.
+                header = f"# API Keys for project: {project_name}"
+                keys_lines = "\n".join([f"{k['name']}={k['key']}" for k in keys])
+                output = header + "\n\n" + keys_lines
 
-        # Create in-memory file
+        # Create in-memory file for sending
         buffer = io.BytesIO()
         buffer.write(output.encode('utf-8'))
         buffer.seek(0)
