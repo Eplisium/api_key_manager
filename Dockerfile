@@ -8,7 +8,7 @@ WORKDIR /app
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
     FLASK_APP=app.py \
-    FLASK_ENV=production
+    FLASK_ENV=development
 
 # Install system dependencies
 RUN apt-get update && apt-get install -y --no-install-recommends \
@@ -24,6 +24,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Copy the entrypoint script
 COPY docker-entrypoint.sh .
 RUN chmod +x docker-entrypoint.sh
+RUN sed -i 's/\r$//' docker-entrypoint.sh  # Remove CR characters (convert CRLF to LF)
 
 # Copy the rest of the application
 COPY . .
@@ -35,4 +36,4 @@ RUN mkdir -p instance && chmod 777 instance
 EXPOSE 5000
 
 # Set the entrypoint
-ENTRYPOINT ["./docker-entrypoint.sh"] 
+ENTRYPOINT ["/app/docker-entrypoint.sh"] 

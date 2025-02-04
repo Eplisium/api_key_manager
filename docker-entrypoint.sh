@@ -7,4 +7,4 @@ sleep 1
 flask db upgrade
 
 # Start the Flask application
-exec flask run --host=0.0.0.0 
+exec flask run --host=127.0.0.1 
