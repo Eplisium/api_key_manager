@@ -299,9 +299,10 @@ function renderProjects(projects) {
         <div class="project-item ${selectedProject === project.id ? 'active' : ''}" 
                 data-project-id="${project.id}"
                 data-position="${project.position}"
+                draggable="true"
                 ondragstart="handleProjectDragStart(event, ${project.id})"
-                ondragover="handleDragOver(event)"
-                ondrop="handleDrop(event)"
+                ondragover="handleProjectDragOver(event)"
+                ondrop="handleProjectDrop(event)"
                 ondragend="handleProjectDragEnd(event)"
                 onclick="selectProject(${project.id})"
                 oncontextmenu="showContextMenu(event, ${project.id})">
@@ -319,6 +320,126 @@ function renderProjects(projects) {
             </div>
         </div>
     `).join('');
+
+    // Add drag and drop event listeners to all project items
+    document.querySelectorAll('.project-item').forEach(item => {
+        item.addEventListener('dragstart', (e) => handleProjectDragStart(e, parseInt(item.dataset.projectId)));
+        item.addEventListener('dragover', handleProjectDragOver);
+        item.addEventListener('drop', handleProjectDrop);
+        item.addEventListener('dragend', handleProjectDragEnd);
+    });
+}
+
+function handleProjectDragStart(event, projectId) {
+    event.stopPropagation();
+    draggedProject = projectId;
+    event.dataTransfer.setData('text/plain', projectId);
+    event.currentTarget.classList.add('dragging');
+    
+    // Add a dragging class to the body to help with styling
+    document.body.classList.add('project-dragging');
+    
+    // Remove any existing drag-over classes
+    document.querySelectorAll('.project-item').forEach(item => {
+        item.classList.remove('drag-over');
+    });
+}
+
+function handleProjectDragOver(event) {
+    event.preventDefault();
+    event.stopPropagation();
+    
+    // Only handle if we're dragging a project
+    if (!draggedProject) return;
+    
+    const projectItem = event.currentTarget;
+    if (!projectItem.classList.contains('project-item')) return;
+    
+    const draggedElement = document.querySelector(`[data-project-id="${draggedProject}"]`);
+    if (!draggedElement) return;
+    
+    const draggedPos = parseInt(draggedElement.dataset.position);
+    const targetPos = parseInt(projectItem.dataset.position);
+    
+    // Only show drag-over effect if positions are different
+    if (draggedPos !== targetPos) {
+        // Remove drag-over class from all other items
+        document.querySelectorAll('.project-item').forEach(item => {
+            item.classList.remove('drag-over');
+        });
+        projectItem.classList.add('drag-over');
+    }
+}
+
+function handleProjectDragEnd(event) {
+    event.stopPropagation();
+    // Clean up all drag-related classes
+    document.querySelectorAll('.project-item').forEach(item => {
+        item.classList.remove('dragging');
+        item.classList.remove('drag-over');
+    });
+    document.body.classList.remove('project-dragging');
+    draggedProject = null;
+}
+
+async function handleProjectDrop(event) {
+    event.preventDefault();
+    event.stopPropagation();
+    
+    // If we're not dragging a project, let the key drop handler take over
+    if (!draggedProject) return;
+    
+    const projectItem = event.currentTarget;
+    if (!projectItem.classList.contains('project-item')) return;
+    
+    // Clean up drag effects
+    document.querySelectorAll('.project-item').forEach(item => {
+        item.classList.remove('drag-over');
+    });
+    document.body.classList.remove('project-dragging');
+    
+    const targetProjectId = parseInt(projectItem.dataset.projectId);
+    const sourceProjectId = draggedProject;
+    
+    if (sourceProjectId === targetProjectId) return;
+    
+    try {
+        const targetPosition = parseInt(projectItem.dataset.position);
+        
+        // Add loading state to source project
+        const sourceProject = document.querySelector(`[data-project-id="${sourceProjectId}"]`);
+        if (sourceProject) {
+            sourceProject.style.opacity = '0.7';
+            sourceProject.style.pointerEvents = 'none';
+        }
+        
+        const response = await fetch(`/projects/${sourceProjectId}/reorder`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ new_position: targetPosition })
+        });
+        
+        if (!response.ok) {
+            const error = await response.json();
+            throw new Error(error.error || 'Failed to reorder project');
+        }
+        
+        // Refresh projects after successful reorder
+        await fetchProjects();
+        showNotification('Project order updated', 'success');
+    } catch (error) {
+        console.error('Error reordering project:', error);
+        showNotification(error.message, 'error');
+        
+        // Reset the source project style if it exists
+        const sourceProject = document.querySelector(`[data-project-id="${sourceProjectId}"]`);
+        if (sourceProject) {
+            sourceProject.style.opacity = '';
+            sourceProject.style.pointerEvents = '';
+        }
+    } finally {
+        draggedProject = null;
+    }
 }
 
 function updateProjectSelect(projects) {
@@ -396,8 +517,15 @@ function renderKeys(keys) {
         </div>
     `).join('');
     
+    // Add drag and drop event listeners to the container
     container.ondragover = handleDragOver;
     container.ondrop = handleDrop;
+    
+    // Add drag and drop event listeners to all project items
+    document.querySelectorAll('.project-item').forEach(item => {
+        item.ondragover = handleDragOver;
+        item.ondrop = handleDrop;
+    });
 }
 
 function showAllKeys() {
@@ -525,6 +653,7 @@ async function handleProjectSubmit(event) {
 
 // Update handleDragStart to include key data
 function handleDragStart(event, keyId) {
+    event.stopPropagation();
     draggedKey = keyId;
     const keyCard = event.target.closest('.key-card');
     if (!keyCard) return;
@@ -548,40 +677,45 @@ function handleDragStart(event, keyId) {
     });
 }
 
-// Update handleDragEnd to clean up
 function handleDragEnd(event) {
+    event.stopPropagation();
     const keyCard = event.target.closest('.key-card');
     if (keyCard) {
         keyCard.classList.remove('dragging');
         keyCard.style.opacity = '';
         keyCard.style.transform = '';
     }
-    draggedKey = null;
-    draggedKeyRect = null;
     
     // Remove droppable and drag-over classes from all elements
     document.querySelectorAll('.project-item, .key-card').forEach(item => {
         item.classList.remove('droppable');
         item.classList.remove('drag-over');
     });
+    
+    draggedKey = null;
+    draggedKeyRect = null;
 }
 
-// Update handleDragOver for project items
 function handleDragOver(event) {
     event.preventDefault();
-    event.dataTransfer.dropEffect = 'move';
+    event.stopPropagation();
     
     // If we're dragging over a project item
     const projectItem = event.target.closest('.project-item');
     if (projectItem) {
-        // Only show drag-over effect if it's a different project
-        if (projectItem.dataset.projectId != selectedProject) {
+        // Only show drag-over effect if it's a different project and we're dragging a key
+        if (draggedKey && projectItem.dataset.projectId != selectedProject) {
+            document.querySelectorAll('.project-item').forEach(item => {
+                item.classList.remove('drag-over');
+            });
             projectItem.classList.add('drag-over');
         }
         return;
     }
     
     // Handle drag over for key reordering within the same project
+    if (!draggedKey) return;
+    
     const container = document.getElementById('keys-container');
     const draggingCard = document.querySelector('.key-card.dragging');
     if (!draggingCard) return;
@@ -607,17 +741,13 @@ function handleDragOver(event) {
         const card = cards[i];
         const cardRect = card.getBoundingClientRect();
         const cardTop = cardRect.top - containerRect.top;
-        const cardBottom = cardTop + cardRect.height;
         const cardMiddle = cardTop + (cardRect.height / 2);
         
-        // If mouse is above the middle of this card
         if (mouseY < cardMiddle) {
             targetCard = card;
             insertAfter = false;
             break;
-        }
-        // If mouse is below the middle of this card but above the next card
-        else if (i === cards.length - 1 || mouseY < cards[i + 1].getBoundingClientRect().top - containerRect.top) {
+        } else if (i === cards.length - 1 || mouseY < cards[i + 1].getBoundingClientRect().top - containerRect.top) {
             targetCard = card;
             insertAfter = true;
             break;
@@ -625,39 +755,30 @@ function handleDragOver(event) {
     }
     
     if (targetCard) {
-        // Add drag-over effect
         targetCard.classList.add('drag-over');
-        
-        // Calculate if we should insert before or after based on exact mouse position
-        const cardRect = targetCard.getBoundingClientRect();
-        const cardMiddleY = cardRect.top + cardRect.height / 2;
-        
         if (insertAfter) {
             container.insertBefore(draggingCard, targetCard.nextSibling);
         } else {
             container.insertBefore(draggingCard, targetCard);
         }
     } else {
-        // If we're above all cards, insert at the beginning
         container.insertBefore(draggingCard, cards[0]);
     }
 }
 
-// Update handleDrop to handle project drops
-async function handleDrop(event) {
+function handleDrop(event) {
     event.preventDefault();
+    event.stopPropagation();
     
     // Remove drag-over effects
     document.querySelectorAll('.project-item, .key-card').forEach(item => {
         item.classList.remove('drag-over');
+        item.classList.remove('droppable');
     });
-    
-    const keyId = event.dataTransfer.getData('text/plain');
-    if (!keyId) return;
     
     // Check if we're dropping on a project item
     const projectItem = event.target.closest('.project-item');
-    if (projectItem) {
+    if (projectItem && draggedKey) {
         const targetProjectId = parseInt(projectItem.dataset.projectId);
         
         // Don't do anything if dropping onto the same project
@@ -666,22 +787,25 @@ async function handleDrop(event) {
         }
         
         // Show move/copy modal
-        showKeyMoveModal(parseInt(keyId), targetProjectId);
+        showKeyMoveModal(draggedKey, targetProjectId);
         return;
     }
     
-    // Handle reordering within current view
+    // Handle key reordering within the same project
+    if (!draggedKey || !selectedProject) return;
+    
     const container = document.getElementById('keys-container');
-    const droppedCard = document.querySelector(`[data-key-id="${keyId}"]`);
+    const droppedCard = document.querySelector(`[data-key-id="${draggedKey}"]`);
+    if (!droppedCard) return;
     
-    if (!droppedCard || !selectedProject) return;
-    
-    // Get all cards in their current order
     const cards = [...container.querySelectorAll('.key-card')];
     const newPosition = cards.indexOf(droppedCard);
-    
     if (newPosition === -1) return;
     
+    handleKeyReorder(draggedKey, newPosition, droppedCard);
+}
+
+async function handleKeyReorder(keyId, newPosition, droppedCard) {
     try {
         // Add loading state
         droppedCard.style.opacity = '0.7';
@@ -1316,32 +1440,72 @@ async function performExport(format, password = null) {
 }
 
 function handleProjectDragStart(event, projectId) {
+    event.stopPropagation();
     draggedProject = projectId;
     event.dataTransfer.setData('text/plain', projectId);
     event.currentTarget.classList.add('dragging');
-}
-
-function handleProjectDragOver(event) {
-    event.preventDefault();
-    const projectItem = event.currentTarget;
-    if (projectItem.classList.contains('project-item')) {
-        projectItem.classList.add('drag-over');
-    }
-}
-
-function handleProjectDragEnd(event) {
-    event.currentTarget.classList.remove('dragging');
+    
+    // Add a dragging class to the body to help with styling
+    document.body.classList.add('project-dragging');
+    
+    // Remove any existing drag-over classes
     document.querySelectorAll('.project-item').forEach(item => {
         item.classList.remove('drag-over');
     });
 }
 
+function handleProjectDragOver(event) {
+    event.preventDefault();
+    event.stopPropagation();
+    
+    // Only handle if we're dragging a project
+    if (!draggedProject) return;
+    
+    const projectItem = event.currentTarget;
+    if (!projectItem.classList.contains('project-item')) return;
+    
+    const draggedElement = document.querySelector(`[data-project-id="${draggedProject}"]`);
+    if (!draggedElement) return;
+    
+    const draggedPos = parseInt(draggedElement.dataset.position);
+    const targetPos = parseInt(projectItem.dataset.position);
+    
+    // Only show drag-over effect if positions are different
+    if (draggedPos !== targetPos) {
+        // Remove drag-over class from all other items
+        document.querySelectorAll('.project-item').forEach(item => {
+            item.classList.remove('drag-over');
+        });
+        projectItem.classList.add('drag-over');
+    }
+}
+
+function handleProjectDragEnd(event) {
+    event.stopPropagation();
+    // Clean up all drag-related classes
+    document.querySelectorAll('.project-item').forEach(item => {
+        item.classList.remove('dragging');
+        item.classList.remove('drag-over');
+    });
+    document.body.classList.remove('project-dragging');
+    draggedProject = null;
+}
+
 async function handleProjectDrop(event) {
     event.preventDefault();
-    const projectItem = event.currentTarget;
-    projectItem.classList.remove('drag-over');
+    event.stopPropagation();
     
+    // If we're not dragging a project, let the key drop handler take over
     if (!draggedProject) return;
+    
+    const projectItem = event.currentTarget;
+    if (!projectItem.classList.contains('project-item')) return;
+    
+    // Clean up drag effects
+    document.querySelectorAll('.project-item').forEach(item => {
+        item.classList.remove('drag-over');
+    });
+    document.body.classList.remove('project-dragging');
     
     const targetProjectId = parseInt(projectItem.dataset.projectId);
     const sourceProjectId = draggedProject;
@@ -1350,6 +1514,13 @@ async function handleProjectDrop(event) {
     
     try {
         const targetPosition = parseInt(projectItem.dataset.position);
+        
+        // Add loading state to source project
+        const sourceProject = document.querySelector(`[data-project-id="${sourceProjectId}"]`);
+        if (sourceProject) {
+            sourceProject.style.opacity = '0.7';
+            sourceProject.style.pointerEvents = 'none';
+        }
         
         const response = await fetch(`/projects/${sourceProjectId}/reorder`, {
             method: 'PATCH',
@@ -1362,11 +1533,19 @@ async function handleProjectDrop(event) {
             throw new Error(error.error || 'Failed to reorder project');
         }
         
-        showNotification('Project order updated', 'success');
+        // Refresh projects after successful reorder
         await fetchProjects();
+        showNotification('Project order updated', 'success');
     } catch (error) {
         console.error('Error reordering project:', error);
         showNotification(error.message, 'error');
+        
+        // Reset the source project style if it exists
+        const sourceProject = document.querySelector(`[data-project-id="${sourceProjectId}"]`);
+        if (sourceProject) {
+            sourceProject.style.opacity = '';
+            sourceProject.style.pointerEvents = '';
+        }
     } finally {
         draggedProject = null;
     }
@@ -1891,6 +2070,8 @@ function performExport(format, password = null) {
 // Update error handling in handleProjectDrop
 async function handleProjectDrop(event) {
     event.preventDefault();
+    event.stopPropagation();
+    
     const projectItem = event.currentTarget;
     projectItem.classList.remove('drag-over');
     
@@ -1915,8 +2096,9 @@ async function handleProjectDrop(event) {
             throw new Error(error.error || 'Failed to reorder project');
         }
         
-        showNotification('Project order updated', 'success');
+        // Refresh projects after successful reorder
         await fetchProjects();
+        showNotification('Project order updated', 'success');
     } catch (error) {
         console.error('Error reordering project:', error);
         showNotification(error.message, 'error');

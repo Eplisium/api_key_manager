@@ -665,20 +665,26 @@ def reorder_project(project_id):
             return jsonify({'error': 'New position is required'}), 400
 
         project = Project.query.get_or_404(project_id)
-        new_position = data['new_position']
+        new_position = max(0, int(data['new_position']))  # Ensure non-negative position
         old_position = project.position
 
         logger.info(f"Reordering project {project.name} from position {old_position} to {new_position}")
 
         with db.session.begin_nested():  # Create a savepoint
-            if new_position >= 0:
+            # Get total number of projects
+            total_projects = Project.query.count()
+            # Ensure new_position is within bounds
+            new_position = min(new_position, total_projects - 1)
+
+            if new_position != old_position:
+                # First update the positions of other projects
                 if new_position > old_position:
                     # Moving forward: update positions of projects between old and new position
                     affected = Project.query.filter(
                         Project.position <= new_position,
                         Project.position > old_position,
                         Project.id != project_id
-                    ).update({Project.position: Project.position - 1})
+                    ).update({Project.position: Project.position - 1}, synchronize_session=False)
                     logger.info(f"Updated {affected} projects moving forward")
                 else:
                     # Moving backward: update positions of projects between new and old position
@@ -686,18 +692,19 @@ def reorder_project(project_id):
                         Project.position >= new_position,
                         Project.position < old_position,
                         Project.id != project_id
-                    ).update({Project.position: Project.position + 1})
+                    ).update({Project.position: Project.position + 1}, synchronize_session=False)
                     logger.info(f"Updated {affected} projects moving backward")
 
-            project.position = new_position
-            db.session.flush()  # Ensure all position updates are applied
+                # Then update the position of the moved project
+                project.position = new_position
+                db.session.flush()  # Ensure all position updates are applied
 
-            # Normalize positions
-            projects = Project.query.order_by(Project.position).all()
-            for i, p in enumerate(projects):
-                if p.position != i:
-                    p.position = i
-                    logger.info(f"Fixed position for project {p.name}: {p.position} -> {i}")
+                # Finally normalize all positions to ensure they are sequential and start from 0
+                projects = Project.query.order_by(Project.position).all()
+                for i, p in enumerate(projects):
+                    if p.position != i:
+                        p.position = i
+                        logger.info(f"Fixed position for project {p.name}: {p.position} -> {i}")
 
         db.session.commit()
         logger.info(f"Successfully reordered project {project.name} to position {new_position}")
