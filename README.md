@@ -2,117 +2,55 @@
 
 ![API Key Manager Picture](images/main.png)
 
-A Flask-based web application for managing and organizing API keys with a modern, responsive interface. This application helps developers and teams keep track of their API keys, organize them by projects, and maintain a secure central repository of API credentials.
+A secure Flask-based web application for managing and organizing API keys with a modern, responsive interface. Perfect for developers and teams who need to maintain a centralized repository of API credentials with robust organization features.
 
-## Features
+## Key Features
 
-- **API Key Management**
-  - Store and organize API keys with descriptions and usage information
-  - Copy keys to clipboard with one click
-  - Secure storage of API credentials
-  - Add descriptions and "used with" information for each key
+### 🔑 API Key Management
+- Store and organize API keys securely with optional encryption
+- Add descriptions and service information for each key
+- One-click copy to clipboard functionality
+- Support for encrypted and unencrypted keys
+- Automatic key name conflict resolution
 
-- **Project Organization**
-  - Group API keys by projects
-  - Drag-and-drop interface for organizing keys
-  - Reorder keys within projects
-  - Move keys between projects
+### 📂 Project Organization
+- Group API keys by projects
+- Intuitive drag-and-drop interface for organizing keys
+- Reorder keys within and between projects
+- Smart position tracking for ordered lists
+- Project-based filtering system
 
-- **Modern UI/UX**
-  - Responsive design that works on all devices
-  - Dark/Light theme support
-  - Collapsible sidebar for better space utilization
-  - Drag-and-drop interface for easy organization
-  - Real-time updates
-  - Theme persistence across sessions
-  - One-click copy to clipboard for API keys
-  - Collapsible sidebar with state persistence
-  - Interactive notifications for bulk actions
-  - Drag-and-drop reordering within projects
-  - Drag-and-drop between projects for key organization
-  - Modern toast notifications for actions
-  - Responsive grid layout for key cards
+### 🔒 Security
+- Optional encryption for sensitive API keys using PBKDF2 and Fernet
+- Secure storage with SQLite database
+- Transaction-based operations with automatic rollback
+- Comprehensive activity logging
+- Input validation and sanitization
+- File encoding validation (UTF-8)
 
-- **Security & Logging**
-  - Comprehensive logging system
-  - Secure storage of API keys
-  - Error handling and validation
-  - Database backup support
-  - Detailed error logging to api_key_manager.log
-  - Automatic database transaction rollback on errors
-  - Input validation for all API endpoints
-  - File encoding validation (UTF-8)
-  - Secure file upload handling
-  - Automatic key name conflict resolution
-  - Database migration error handling
-  - Comprehensive error messages for debugging
-  - Unique constraint enforcement per project
-  - Automatic timestamp tracking for all records
-  - Secure file type validation during uploads
-  - Automatic database state recovery
-  - Transaction-based database operations
-  - Detailed activity logging with timestamps
-  - Configurable logging levels and formats
-  - Backup recommendations before destructive operations
+### 📥 Import/Export
+- Import API keys from multiple formats:
+  - Environment files (.env)
+  - JSON files
+  - YAML files
+  - Properties files (.properties)
+  - Configuration files (.conf, .config)
+- Import directly from OS environment variables
+- Export keys to .env, JSON, or YAML formats
+- Database backup and restore functionality
 
-- **Import/Export Capabilities**
-  - Import API keys from multiple file formats:
-    - .env files
-    - JSON files
-    - YAML files
-    - Properties files (.properties)
-    - Configuration files (.conf, .config)
-  - Export API keys to:
-    - .env format
-    - JSON format
-    - YAML format
-  - Bulk import configuration with post-import customization
-  - Support for various .env file formats including:
-    - KEY=value
-    - KEY = value
-    - KEY: value
-    - export KEY=value
-    - KEY='value'
-    - KEY="value"
-    - Comments support (# or ; prefixed lines)
-  - Import directly from OS environment variables
-  - Post-import configuration interface for bulk editing
-  - Project-specific imports and exports
-  - Automatic file type validation during import
-
-- **Bulk Operations**
-  - Set descriptions for multiple keys at once
-  - Apply "Used with" information to multiple keys simultaneously
-  - Clear descriptions for multiple keys
-  - Delete all keys in a project
-  - Batch update key configurations after import
-  - Clear all keys with confirmation dialog
-  - Bulk key removal with undo option
-
-- **UI Customization**
-  - Theme persistence across browser sessions
-  - Customizable title colors with color picker
-  - Individual word color customization
-  - Rainbow effect option for title
-  - Color customization memory across sessions
-  - Sidebar state persistence (expanded/collapsed)
-  - Interactive tooltips for UI elements
-  - Animated notifications and toasts
-  - Smooth transitions and animations
-  - Keyboard shortcuts support
-
-- **Project Management**
-  - Automatic position tracking for keys within projects
-  - Smart conflict resolution for duplicate key names
-  - Project-specific view modes
-  - Automatic project selection memory
-  - Project-specific import/export controls
-  - Visual feedback during drag operations
-  - Project-based filtering system
+### 🎨 Modern UI/UX
+- Responsive design that works on all devices
+- Dark/Light theme support
+- Collapsible sidebar with state persistence
+- Real-time updates and animations
+- Interactive notifications
+- Keyboard shortcuts
+- Drag-and-drop interface
 
 ## Prerequisites
 
-- Python 3.7+
+- Python 3.7 or higher
 - pip (Python package manager)
 - SQLite3
 
@@ -140,122 +78,121 @@ source venv/bin/activate
 pip install -r requirements.txt
 ```
 
-4. Initialize the database and run migrations:
+4. Initialize the database:
 ```bash
 flask db init
 flask db migrate -m "Initial migration"
 flask db upgrade
 ```
 
-## Configuration
+## Usage
 
-The application uses a simple configuration setup with the following defaults:
-
-- Database: SQLite (`keys.db` in the application directory)
-- Server: Runs on `localhost:5000`
-- Logging: Configured via `logging.conf`, outputs to `api_key_manager.log`
-- Database Features:
-  - Automatic timestamps for creation and updates
-  - Unique constraints per project
-  - Position tracking for ordered lists
-  - Relationship management between keys and projects
-  - Automatic cascade operations
-  - Transaction support with rollback capability
-
-To modify these settings, you can edit the following files:
-- `app.py`: Database URL and application settings
-- `logging.conf`: Logging configuration
-  - Log level control
-  - Log format customization
-  - Log rotation settings
-  - Separate loggers for different components
-
-## Running the Application
-
-1. Start the Flask development server:
+1. Start the application:
 ```bash
 python app.py
 ```
 
-2. Access the application at `http://localhost:5000`
+2. Access the web interface at `http://localhost:5000`
+
+3. Basic operations:
+   - Create projects to organize your keys
+   - Add API keys with descriptions and service information
+   - Use drag-and-drop to organize keys between projects
+   - Import keys from various file formats
+   - Export keys in your preferred format
+   - Optionally encrypt sensitive keys
+
+## Configuration
+
+The application uses a simple configuration setup:
+
+### Database
+- Type: SQLite
+- Default location: `instance/keys.db`
+- Features:
+  - Automatic timestamps
+  - Unique constraints per project
+  - Transaction support
+  - Automatic cascade operations
+
+### Logging
+- Configuration file: `logging.conf`
+- Log file: `api_key_manager.log`
+- Features:
+  - Configurable log levels
+  - Detailed timestamps
+  - Component-specific logging
+  - Automatic log rotation
+
+### Security
+- Default configuration is for development
+- For production:
+  - Set `FLASK_SECRET_KEY` environment variable
+  - Enable HTTPS if exposed to internet
+  - Implement authentication if needed
+  - Use environment variables for sensitive data
 
 ## API Endpoints
 
 ### Keys
-
 - `GET /keys` - List all keys
-  - Query parameters:
-    - `project_id`: Filter keys by project
-    - `show_all`: Show all keys including those in projects
-
-- `GET /keys/<id>` - Get a specific key
-- `POST /keys` - Create a new key
-  ```json
-  {
-    "name": "API Key Name",
-    "key": "your-api-key",
-    "description": "Optional description",
-    "used_with": "Service name",
-    "project_id": null
-  }
-  ```
-- `PUT /keys/<id>` - Update a key
-- `DELETE /keys/<id>` - Delete a key
-- `PATCH /keys/<id>/project` - Update key's project
-- `PATCH /keys/<id>/reorder` - Reorder key within project
+  - Query params: `project_id`, `show_all`
+- `GET /keys/<id>` - Get specific key
+- `POST /keys` - Create key
+- `PUT /keys/<id>` - Update key
+- `DELETE /keys/<id>` - Delete key
+- `PATCH /keys/<id>/project` - Move key to project
+- `PATCH /keys/<id>/reorder` - Reorder key
+- `POST /keys/encrypt` - Encrypt keys
+- `POST /keys/decrypt` - Decrypt keys
+- `GET /keys/status` - Get encryption status
 
 ### Projects
-
 - `GET /projects` - List all projects
-- `POST /projects` - Create a new project
-  ```json
-  {
-    "name": "Project Name"
-  }
-  ```
-- `PUT /projects/<id>` - Update a project
-- `DELETE /projects/<id>` - Delete a project
+- `POST /projects` - Create project
+- `PUT /projects/<id>` - Update project
+- `DELETE /projects/<id>` - Delete project
+- `POST /projects/<id>/import-env` - Import keys to project
+- `GET /export` - Export keys (supports multiple formats)
 
-## Development
-
-### Database Migrations
-
-The application uses Flask-Migrate for database migrations:
-
-1. Create a new migration after model changes:
-```bash
-flask db migrate -m "Migration message"
-```
-
-2. Apply migrations:
-```bash
-flask db upgrade
-```
-
-### Checking Database Status
-
-Use the built-in database check command:
-```bash
-flask check-db
-```
-
-## Security Considerations
-
-1. The application is designed for local use or internal networks
-2. The default configuration uses hardcoded values suitable for development
-3. For production deployment:
-   - Change the secret key in `app.py`
-   - Implement proper authentication
-   - Use HTTPS if exposed to the internet
-   - Consider using environment variables for sensitive data
-4. Regularly backup the SQLite database file
-
-## Browser Compatibility
+## Browser Support
 
 - Chrome 80+
 - Firefox 75+
 - Safari 13+
 - Edge 80+
+
+## Troubleshooting
+
+### Common Issues
+
+1. Database Errors
+   - Ensure SQLite is installed
+   - Check write permissions
+   - Verify all migrations are applied
+   - Check `api_key_manager.log` for details
+
+2. Import/Export Issues
+   - Ensure correct file format
+   - Check file encoding (must be UTF-8)
+   - Verify file permissions
+   - Look for specific error messages in logs
+
+3. UI Problems
+   - Clear browser cache
+   - Check browser console
+   - Verify all static files are loading
+   - Ensure JavaScript is enabled
+
+4. Encryption Issues
+   - Remember encryption password
+   - Check key status before operations
+   - Verify encryption status via API
+   - Backup data before bulk encryption
+
+## License
+
+This project is licensed under the MIT License - see the LICENSE file for details.
 
 ## Contributing
 
@@ -265,35 +202,4 @@ flask check-db
 4. Push to the branch
 5. Create a Pull Request
 
-## License
-
-This project is licensed under the MIT License - see the LICENSE file for details.
-
-## Troubleshooting
-
-### Common Issues
-
-1. Database initialization errors:
-   - Ensure SQLite is installed
-   - Check write permissions in the application directory
-   - Run `flask db init` if this is a fresh installation
-   - Check `api_key_manager.log` for detailed error messages
-
-2. Key management issues:
-   - Check the logs in `api_key_manager.log`
-   - Verify database connectivity
-   - Ensure proper JSON format in API requests
-
-3. UI issues:
-   - Clear browser cache
-   - Check browser console for errors
-   - Verify all static files are being served correctly
-
-4. Migration issues:
-   - If you get "No such table" errors, ensure you've run all migrations
-   - For fresh installations, run the full migration sequence:
-     ```bash
-     flask db init
-     flask db migrate -m "Initial migration"
-     flask db upgrade
-     ```
+For detailed contribution guidelines, please read CONTRIBUTING.md.
