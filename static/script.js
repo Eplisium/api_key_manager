@@ -294,16 +294,15 @@ async function fetchProjects() {
 }
 
 function renderProjects(projects) {
+    // Sort projects by position to ensure correct order
+    projects.sort((a, b) => a.position - b.position);
+    
     const container = document.getElementById('projects-list');
     container.innerHTML = projects.map(project => `
         <div class="project-item ${selectedProject === project.id ? 'active' : ''}" 
                 data-project-id="${project.id}"
                 data-position="${project.position}"
                 draggable="true"
-                ondragstart="handleProjectDragStart(event, ${project.id})"
-                ondragover="handleProjectDragOver(event)"
-                ondrop="handleProjectDrop(event)"
-                ondragend="handleProjectDragEnd(event)"
                 onclick="selectProject(${project.id})"
                 oncontextmenu="showContextMenu(event, ${project.id})">
             <div class="project-info">
@@ -330,11 +329,20 @@ function renderProjects(projects) {
     });
 }
 
+// Improved handleProjectDragStart function with better visual feedback
 function handleProjectDragStart(event, projectId) {
     event.stopPropagation();
     draggedProject = projectId;
+    
+    // Create a custom drag image that looks like the project item
+    const draggedElement = event.currentTarget;
+    
+    // Set data transfer properties
     event.dataTransfer.setData('text/plain', projectId);
-    event.currentTarget.classList.add('dragging');
+    event.dataTransfer.effectAllowed = 'move';
+    
+    // Add visual classes
+    draggedElement.classList.add('dragging');
     
     // Add a dragging class to the body to help with styling
     document.body.classList.add('project-dragging');
@@ -343,8 +351,15 @@ function handleProjectDragStart(event, projectId) {
     document.querySelectorAll('.project-item').forEach(item => {
         item.classList.remove('drag-over');
     });
+    
+    // Add a subtle transition effect to all projects
+    document.querySelectorAll('.project-item:not(.dragging)').forEach(item => {
+        item.style.transition = 'transform 0.2s ease-in-out, opacity 0.2s ease-in-out';
+        item.style.opacity = '0.8';
+    });
 }
 
+// Improved handleProjectDragOver with better position indicators
 function handleProjectDragOver(event) {
     event.preventDefault();
     event.stopPropagation();
@@ -366,22 +381,41 @@ function handleProjectDragOver(event) {
         // Remove drag-over class from all other items
         document.querySelectorAll('.project-item').forEach(item => {
             item.classList.remove('drag-over');
+            item.classList.remove('drag-above');
+            item.classList.remove('drag-below');
         });
+        
+        // Add appropriate class based on relative position
         projectItem.classList.add('drag-over');
+        
+        // Add a class to indicate whether the dragged item will go above or below
+        if (draggedPos > targetPos) {
+            projectItem.classList.add('drag-above');
+        } else {
+            projectItem.classList.add('drag-below');
+        }
     }
 }
 
+// Improved handleProjectDragEnd with better cleanup
 function handleProjectDragEnd(event) {
     event.stopPropagation();
+    
     // Clean up all drag-related classes
     document.querySelectorAll('.project-item').forEach(item => {
         item.classList.remove('dragging');
         item.classList.remove('drag-over');
+        item.classList.remove('drag-above');
+        item.classList.remove('drag-below');
+        item.style.transition = '';
+        item.style.opacity = '';
     });
+    
     document.body.classList.remove('project-dragging');
     draggedProject = null;
 }
 
+// Improved handleProjectDrop with better error handling and visual feedback
 async function handleProjectDrop(event) {
     event.preventDefault();
     event.stopPropagation();
@@ -395,13 +429,18 @@ async function handleProjectDrop(event) {
     // Clean up drag effects
     document.querySelectorAll('.project-item').forEach(item => {
         item.classList.remove('drag-over');
+        item.classList.remove('drag-above');
+        item.classList.remove('drag-below');
     });
     document.body.classList.remove('project-dragging');
     
     const targetProjectId = parseInt(projectItem.dataset.projectId);
     const sourceProjectId = draggedProject;
     
-    if (sourceProjectId === targetProjectId) return;
+    if (sourceProjectId === targetProjectId) {
+        draggedProject = null;
+        return;
+    }
     
     try {
         const targetPosition = parseInt(projectItem.dataset.position);
@@ -409,9 +448,13 @@ async function handleProjectDrop(event) {
         // Add loading state to source project
         const sourceProject = document.querySelector(`[data-project-id="${sourceProjectId}"]`);
         if (sourceProject) {
-            sourceProject.style.opacity = '0.7';
+            sourceProject.style.opacity = '0.5';
             sourceProject.style.pointerEvents = 'none';
+            sourceProject.classList.add('reordering');
         }
+        
+        // Add loading state to target project
+        projectItem.classList.add('target-highlight');
         
         const response = await fetch(`/projects/${sourceProjectId}/reorder`, {
             method: 'PATCH',
@@ -436,7 +479,11 @@ async function handleProjectDrop(event) {
         if (sourceProject) {
             sourceProject.style.opacity = '';
             sourceProject.style.pointerEvents = '';
+            sourceProject.classList.remove('reordering');
         }
+        
+        // Reset the target project style
+        projectItem.classList.remove('target-highlight');
     } finally {
         draggedProject = null;
     }
@@ -1421,134 +1468,19 @@ async function exportKeys(format) {
     }
 }
 
-async function performExport(format, password = null) {
-    try {
-        const params = new URLSearchParams({
-            format: format,
-            project_id: selectedProject || '',
-            password: password || ''
-        });
-
-        const url = `/export?${params.toString()}`;
-        
-        // Open in new tab to avoid CORS issues
-        window.open(url, '_blank');
-        
-    } catch (error) {
-        showNotification(`Export failed: ${error.message}`, 'error');
+function performExport(format, password = null) {
+    const queryParams = new URLSearchParams();
+    queryParams.append('format', format);
+    
+    if (selectedProject) {
+        queryParams.append('project_id', selectedProject);
     }
-}
-
-function handleProjectDragStart(event, projectId) {
-    event.stopPropagation();
-    draggedProject = projectId;
-    event.dataTransfer.setData('text/plain', projectId);
-    event.currentTarget.classList.add('dragging');
     
-    // Add a dragging class to the body to help with styling
-    document.body.classList.add('project-dragging');
-    
-    // Remove any existing drag-over classes
-    document.querySelectorAll('.project-item').forEach(item => {
-        item.classList.remove('drag-over');
-    });
-}
-
-function handleProjectDragOver(event) {
-    event.preventDefault();
-    event.stopPropagation();
-    
-    // Only handle if we're dragging a project
-    if (!draggedProject) return;
-    
-    const projectItem = event.currentTarget;
-    if (!projectItem.classList.contains('project-item')) return;
-    
-    const draggedElement = document.querySelector(`[data-project-id="${draggedProject}"]`);
-    if (!draggedElement) return;
-    
-    const draggedPos = parseInt(draggedElement.dataset.position);
-    const targetPos = parseInt(projectItem.dataset.position);
-    
-    // Only show drag-over effect if positions are different
-    if (draggedPos !== targetPos) {
-        // Remove drag-over class from all other items
-        document.querySelectorAll('.project-item').forEach(item => {
-            item.classList.remove('drag-over');
-        });
-        projectItem.classList.add('drag-over');
+    if (password) {
+        queryParams.append('password', password);
     }
-}
-
-function handleProjectDragEnd(event) {
-    event.stopPropagation();
-    // Clean up all drag-related classes
-    document.querySelectorAll('.project-item').forEach(item => {
-        item.classList.remove('dragging');
-        item.classList.remove('drag-over');
-    });
-    document.body.classList.remove('project-dragging');
-    draggedProject = null;
-}
-
-async function handleProjectDrop(event) {
-    event.preventDefault();
-    event.stopPropagation();
     
-    // If we're not dragging a project, let the key drop handler take over
-    if (!draggedProject) return;
-    
-    const projectItem = event.currentTarget;
-    if (!projectItem.classList.contains('project-item')) return;
-    
-    // Clean up drag effects
-    document.querySelectorAll('.project-item').forEach(item => {
-        item.classList.remove('drag-over');
-    });
-    document.body.classList.remove('project-dragging');
-    
-    const targetProjectId = parseInt(projectItem.dataset.projectId);
-    const sourceProjectId = draggedProject;
-    
-    if (sourceProjectId === targetProjectId) return;
-    
-    try {
-        const targetPosition = parseInt(projectItem.dataset.position);
-        
-        // Add loading state to source project
-        const sourceProject = document.querySelector(`[data-project-id="${sourceProjectId}"]`);
-        if (sourceProject) {
-            sourceProject.style.opacity = '0.7';
-            sourceProject.style.pointerEvents = 'none';
-        }
-        
-        const response = await fetch(`/projects/${sourceProjectId}/reorder`, {
-            method: 'PATCH',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ new_position: targetPosition })
-        });
-        
-        if (!response.ok) {
-            const error = await response.json();
-            throw new Error(error.error || 'Failed to reorder project');
-        }
-        
-        // Refresh projects after successful reorder
-        await fetchProjects();
-        showNotification('Project order updated', 'success');
-    } catch (error) {
-        console.error('Error reordering project:', error);
-        showNotification(error.message, 'error');
-        
-        // Reset the source project style if it exists
-        const sourceProject = document.querySelector(`[data-project-id="${sourceProjectId}"]`);
-        if (sourceProject) {
-            sourceProject.style.opacity = '';
-            sourceProject.style.pointerEvents = '';
-        }
-    } finally {
-        draggedProject = null;
-    }
+    window.location.href = `/export?${queryParams.toString()}`;
 }
 
 // Update the title structure to support individual word coloring
@@ -2048,62 +1980,6 @@ async function exportKeys(format) {
     } catch (error) {
         console.error('Error during export:', error);
         showNotification('Failed to check encryption status', 'error');
-    }
-}
-
-function performExport(format, password = null) {
-    const queryParams = new URLSearchParams({
-        format: format
-    });
-    
-    if (selectedProject) {
-        queryParams.append('project_id', selectedProject);
-    }
-    
-    if (password) {
-        queryParams.append('password', password);
-    }
-    
-    window.location.href = `/export?${queryParams.toString()}`;
-}
-
-// Update error handling in handleProjectDrop
-async function handleProjectDrop(event) {
-    event.preventDefault();
-    event.stopPropagation();
-    
-    const projectItem = event.currentTarget;
-    projectItem.classList.remove('drag-over');
-    
-    if (!draggedProject) return;
-    
-    const targetProjectId = parseInt(projectItem.dataset.projectId);
-    const sourceProjectId = draggedProject;
-    
-    if (sourceProjectId === targetProjectId) return;
-    
-    try {
-        const targetPosition = parseInt(projectItem.dataset.position);
-        
-        const response = await fetch(`/projects/${sourceProjectId}/reorder`, {
-            method: 'PATCH',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ new_position: targetPosition })
-        });
-        
-        if (!response.ok) {
-            const error = await response.json();
-            throw new Error(error.error || 'Failed to reorder project');
-        }
-        
-        // Refresh projects after successful reorder
-        await fetchProjects();
-        showNotification('Project order updated', 'success');
-    } catch (error) {
-        console.error('Error reordering project:', error);
-        showNotification(error.message, 'error');
-    } finally {
-        draggedProject = null;
     }
 }
 

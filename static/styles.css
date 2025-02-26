@@ -606,13 +606,61 @@ select.input-field option {
 }
 
 .project-item.dragging {
-  opacity: 0.5;
-  transform: scale(0.95);
+  cursor: grabbing;
+  opacity: 0.7;
+  transform: scale(0.98);
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
+  z-index: 100;
+  background: var(--card);
+  border: 1px solid var(--primary);
+  transition: all 0.2s ease;
+}
+
+[data-theme="dark"] .project-item.dragging {
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.4);
 }
 
 .project-item.drag-over {
-  border: 2px dashed var(--primary);
   transform: scale(1.02);
+  border: 2px dashed var(--primary);
+  background-color: var(--hover);
+  transition: all 0.2s ease;
+}
+
+.project-item.drag-above {
+  border-top: 3px solid var(--primary);
+  padding-top: calc(0.75rem - 3px);
+}
+
+.project-item.drag-below {
+  border-bottom: 3px solid var(--primary);
+  padding-bottom: calc(0.75rem - 3px);
+}
+
+.project-item.reordering {
+  animation: pulse 1.5s infinite;
+}
+
+.project-item.target-highlight {
+  background-color: var(--hover);
+  transition: background-color 0.3s ease;
+}
+
+@keyframes pulse {
+  0% {
+    opacity: 0.5;
+  }
+  50% {
+    opacity: 0.8;
+  }
+  100% {
+    opacity: 0.5;
+  }
+}
+
+body.project-dragging .project-item:not(.dragging):not(.drag-over) {
+  opacity: 0.6;
+  transition: opacity 0.2s ease;
 }
 
 .project-item:hover {
