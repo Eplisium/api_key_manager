@@ -2089,8 +2089,12 @@ function showPasswordPrompt(action, keyId) {
 
 function hidePasswordPrompt() {
     document.getElementById('password-prompt-modal').classList.remove('show');
-    currentKeyAction = null;
-    currentKeyData = null;
+    
+    // Only clear currentKeyAction and currentKeyData if not in the middle of a move operation
+    if (currentKeyAction !== 'move') {
+        currentKeyAction = null;
+        currentKeyData = null;
+    }
 }
 
 async function handlePasswordSubmit(event) {
@@ -2127,19 +2131,13 @@ async function handlePasswordSubmit(event) {
             await performKeyMove(
                 currentKeyData.keyId,
                 currentKeyData.targetProjectId,
-                currentKeyData.shouldCopy
+                currentKeyData.shouldCopy,
+                password // Pass the password to performKeyMove
             );
             
-            // Re-encrypt the key
-            await fetch('/keys/encrypt', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    password: password,
-                    key_ids: [parseInt(keyId)]
-                })
-            });
-            
+            // Clear the action and data after successful move
+            currentKeyAction = null;
+            currentKeyData = null;
             hidePasswordPrompt();
             return;
         }
@@ -2717,7 +2715,17 @@ async function executeKeyMove(shouldCopy = false) {
         return;
     }
     
-    // New code: always perform the move/copy directly.
+    // Find the key in our keys array to check if it's encrypted
+    const key = window.keys.find(k => k.id == currentKeyData.keyId);
+    
+    // If the key is encrypted, show password prompt
+    if (key && key.encrypted) {
+        hideKeyMoveModal(false); // Pass false to preserve currentKeyData
+        showPasswordPrompt('move', currentKeyData.keyId);
+        return;
+    }
+    
+    // If not encrypted, perform the move/copy directly
     try {
         await performKeyMove(
             currentKeyData.keyId,
@@ -2734,7 +2742,10 @@ async function executeKeyMove(shouldCopy = false) {
 
 async function performKeyMove(keyId, targetProjectId, shouldCopy = false, password = null) {
     try {
-        const response = await fetch('/api/keys/move', { // Updated endpoint URL to match backend route
+        // If we have a password, we need to re-encrypt the key after the move/copy
+        const needsReEncryption = password !== null;
+        
+        const response = await fetch('/api/keys/move', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
@@ -2760,13 +2771,61 @@ async function performKeyMove(keyId, targetProjectId, shouldCopy = false, passwo
             throw new Error(errorMessage);
         }
         
+        const result = await response.json();
+        
+        // If we need to re-encrypt the key
+        if (needsReEncryption) {
+            // Get the ID of the key that needs to be re-encrypted
+            // If it was a copy operation, use the new key ID from the response
+            const keyToEncrypt = shouldCopy && result.key ? result.key.id : keyId;
+            
+            // Re-encrypt the key
+            const encryptResponse = await fetch('/keys/encrypt', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    password: password,
+                    key_ids: [parseInt(keyToEncrypt)]
+                })
+            });
+            
+            if (!encryptResponse.ok) {
+                throw new Error('Failed to re-encrypt key');
+            }
+            
+            // If this was a copy operation, we need to make sure the original key remains encrypted too
+            if (shouldCopy) {
+                // Re-encrypt the original key as well
+                const originalKeyEncryptResponse = await fetch('/keys/encrypt', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        password: password,
+                        key_ids: [parseInt(keyId)]
+                    })
+                });
+                
+                if (!originalKeyEncryptResponse.ok) {
+                    throw new Error('Failed to re-encrypt original key');
+                }
+            }
+        }
+        
         showNotification(
             `Key ${shouldCopy ? 'copied' : 'moved'} successfully`,
             'success'
         );
         
-        // Refresh the keys display
+        // Refresh the keys display to ensure encryption status is correctly shown
         await fetchKeys();
+        
+        // If we're in a specific project view, make sure we're showing the right project
+        if (shouldCopy && targetProjectId !== selectedProject) {
+            // If we copied to a different project, stay in the current project view
+        } else if (!shouldCopy) {
+            // If we moved the key, switch to the target project view
+            await selectProject(targetProjectId);
+        }
     } catch (error) {
         console.error('Error moving/copying key:', error);
         showNotification(error.message, 'error');

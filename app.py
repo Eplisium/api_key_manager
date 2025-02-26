@@ -1014,6 +1014,7 @@ def move_key():
         
         # Get the source key
         key = APIKey.query.get_or_404(key_id)
+        was_encrypted = key.encrypted
         
         # If copying, create a new key
         if is_copy:
@@ -1030,11 +1031,15 @@ def move_key():
                 used_with=key.used_with,
                 project_id=target_project_id,
                 position=max_position + 1,
-                encrypted=key.encrypted,
+                encrypted=was_encrypted,  # Preserve encryption status
                 encryption_salt=key.encryption_salt
             )
             
             db.session.add(new_key)
+            
+            # Ensure the original key maintains its encryption status
+            key.encrypted = was_encrypted
+            
             db.session.commit()
             
             logger.info(f"Successfully copied key {key.name} to project {target_project_id}")
@@ -1065,6 +1070,9 @@ def move_key():
             key.project_id = target_project_id
             key.position = max_position + 1
             key.name = generate_unique_name(key.name, target_project_id)
+            
+            # Ensure encryption status is maintained
+            key.encrypted = was_encrypted  # Explicitly preserve encryption status
             
             db.session.commit()
             
