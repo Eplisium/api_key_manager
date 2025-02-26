@@ -62,8 +62,11 @@ body {
   align-items: center;
   margin-bottom: 2rem;
   padding: 1rem;
-  background-color: var(--background-color);
-  border-bottom: 1px solid var(--border-color);
+  background-color: var(--background);
+  border-bottom: 1px solid var(--border);
+  position: sticky;
+  top: 0;
+  z-index: 10;
 }
 
 .title {
@@ -104,9 +107,11 @@ body {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
   gap: 1.5rem;
-  max-height: calc(100vh - 120px);
+  max-height: calc(100vh - 160px);
   overflow-y: auto;
   padding-right: 1rem;
+  padding-top: 1rem;
+  margin-top: 0.5rem;
   scrollbar-width: thin;
   scrollbar-color: var(--border) transparent;
 }
@@ -179,6 +184,7 @@ body.key-dragging .key-card:not(.dragging) {
 .key-card:not(.dragging):hover {
   transform: translateY(-2px);
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  z-index: 2;
 }
 
 [data-theme="dark"] .key-card:not(.dragging):hover {
@@ -575,9 +581,12 @@ select.input-field option {
 .main-content {
   margin-left: 280px;
   padding: 2rem;
+  padding-top: 1rem;
   transition: all 0.3s ease;
   height: 100vh;
   overflow-y: auto;
+  display: flex;
+  flex-direction: column;
 }
 
 .main-content.expanded {
