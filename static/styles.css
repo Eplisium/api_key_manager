@@ -152,6 +152,30 @@ body {
   transition: all 0.2s ease;
 }
 
+/* New styles for drag-above and drag-below indicators */
+.key-card.drag-above {
+  border-top: 3px solid var(--primary);
+  margin-top: 3px;
+  transform: translateY(-2px);
+  transition: all 0.15s ease;
+}
+
+.key-card.drag-below {
+  border-bottom: 3px solid var(--primary);
+  margin-bottom: 3px;
+  transform: translateY(2px);
+  transition: all 0.15s ease;
+}
+
+/* Style for the body when dragging a key */
+body.key-dragging {
+  cursor: grabbing;
+}
+
+body.key-dragging .key-card:not(.dragging) {
+  transition: transform 0.2s ease, border 0.2s ease;
+}
+
 .key-card:not(.dragging):hover {
   transform: translateY(-2px);
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);

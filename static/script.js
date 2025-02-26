@@ -509,14 +509,33 @@ async function fetchKeys() {
             const errorData = await response.json();
             throw new Error(errorData.error || 'Failed to fetch keys');
         }
-        const keys = await response.json();
-        console.log('Received keys:', keys);
-        if (!Array.isArray(keys)) {
-            console.error('Expected array of keys but got:', typeof keys, keys);
+        const keysData = await response.json();
+        console.log('Received keys:', keysData);
+        if (!Array.isArray(keysData)) {
+            console.error('Expected array of keys but got:', typeof keysData, keysData);
             throw new Error('Invalid response format');
         }
-        console.log('Filtered keys:', keys);
-        renderKeys(keys);
+        
+        // Sort keys by position if they have position data
+        const sortedKeys = [...keysData].sort((a, b) => {
+            // If both have positions, sort by position
+            if (a.position !== undefined && b.position !== undefined) {
+                return a.position - b.position;
+            }
+            // If only one has position, prioritize the one with position
+            if (a.position !== undefined) return -1;
+            if (b.position !== undefined) return 1;
+            // If neither has position, maintain original order
+            return 0;
+        });
+        
+        console.log('Sorted keys:', sortedKeys);
+        
+        // Store the keys globally for drag and drop operations
+        window.keys = sortedKeys;
+        
+        // Render the keys
+        renderKeys(sortedKeys);
     } catch (error) {
         console.error('Error fetching keys:', error);
         const container = document.getElementById('keys-container');
@@ -534,6 +553,7 @@ function renderKeys(keys) {
     container.innerHTML = keys.map(key => `
         <div class="key-card" 
                 data-key-id="${key.id}" 
+                data-position="${key.position || 0}"
                 draggable="true" 
                 ondragstart="handleDragStart(event, ${key.id})"
                 ondragend="handleDragEnd(event)"
@@ -571,8 +591,11 @@ function renderKeys(keys) {
     // Add drag and drop event listeners to all project items
     document.querySelectorAll('.project-item').forEach(item => {
         item.ondragover = handleDragOver;
-        item.ondrop = handleDrop;
+        item.ondrop = event => handleKeyDrop(event, item.dataset.projectId);
     });
+    
+    // Store the keys array for reference in drag operations
+    window.keys = keys;
 }
 
 function showAllKeys() {
@@ -722,6 +745,9 @@ function handleDragStart(event, keyId) {
             item.classList.add('droppable');
         }
     });
+    
+    // Add a class to the body to indicate we're dragging a key
+    document.body.classList.add('key-dragging');
 }
 
 function handleDragEnd(event) {
@@ -737,7 +763,12 @@ function handleDragEnd(event) {
     document.querySelectorAll('.project-item, .key-card').forEach(item => {
         item.classList.remove('droppable');
         item.classList.remove('drag-over');
+        item.classList.remove('drag-above');
+        item.classList.remove('drag-below');
     });
+    
+    // Remove the key-dragging class from the body
+    document.body.classList.remove('key-dragging');
     
     draggedKey = null;
     draggedKeyRect = null;
@@ -773,43 +804,80 @@ function handleDragOver(event) {
         return;
     }
     
-    // Remove drag-over class from all cards first
-    cards.forEach(card => card.classList.remove('drag-over'));
+    // Remove drag-over classes from all cards first
+    cards.forEach(card => {
+        card.classList.remove('drag-over');
+        card.classList.remove('drag-above');
+        card.classList.remove('drag-below');
+    });
     
-    // Get mouse position relative to the container
-    const containerRect = container.getBoundingClientRect();
-    const mouseY = event.clientY - containerRect.top;
+    // Get mouse position
+    const mouseX = event.clientX;
+    const mouseY = event.clientY;
     
-    // Calculate the position where the card should be inserted
-    let targetCard = null;
-    let insertAfter = false;
+    // Determine if we're using a grid or list layout
+    const containerStyle = window.getComputedStyle(container);
+    const isGridLayout = containerStyle.display === 'grid';
     
-    for (let i = 0; i < cards.length; i++) {
-        const card = cards[i];
-        const cardRect = card.getBoundingClientRect();
-        const cardTop = cardRect.top - containerRect.top;
-        const cardMiddle = cardTop + (cardRect.height / 2);
+    // Find the closest card to the mouse position
+    let closestCard = null;
+    let closestDistance = Infinity;
+    let insertPosition = 'before'; // 'before' or 'after'
+    
+    cards.forEach(card => {
+        const rect = card.getBoundingClientRect();
+        const cardCenterX = rect.left + rect.width / 2;
+        const cardCenterY = rect.top + rect.height / 2;
         
-        if (mouseY < cardMiddle) {
-            targetCard = card;
-            insertAfter = false;
-            break;
-        } else if (i === cards.length - 1 || mouseY < cards[i + 1].getBoundingClientRect().top - containerRect.top) {
-            targetCard = card;
-            insertAfter = true;
-            break;
-        }
-    }
-    
-    if (targetCard) {
-        targetCard.classList.add('drag-over');
-        if (insertAfter) {
-            container.insertBefore(draggingCard, targetCard.nextSibling);
+        // Calculate distance based on layout
+        let distance;
+        if (isGridLayout) {
+            // For grid layout, use 2D distance
+            const dx = mouseX - cardCenterX;
+            const dy = mouseY - cardCenterY;
+            distance = Math.sqrt(dx * dx + dy * dy);
+            
+            // Determine if we should insert before or after
+            if (mouseY < rect.top + (rect.height * 0.5)) {
+                insertPosition = 'before';
+            } else {
+                insertPosition = 'after';
+            }
         } else {
-            container.insertBefore(draggingCard, targetCard);
+            // For list layout, primarily use vertical distance
+            distance = Math.abs(mouseY - cardCenterY);
+            
+            // Determine if we should insert before or after
+            if (mouseY < rect.top + (rect.height * 0.5)) {
+                insertPosition = 'before';
+            } else {
+                insertPosition = 'after';
+            }
+        }
+        
+        if (distance < closestDistance) {
+            closestDistance = distance;
+            closestCard = card;
+        }
+    });
+    
+    if (closestCard) {
+        // Add appropriate visual indicator
+        if (insertPosition === 'before') {
+            closestCard.classList.add('drag-above');
+        } else {
+            closestCard.classList.add('drag-below');
+        }
+        
+        // Reposition the dragged card
+        if (insertPosition === 'before') {
+            container.insertBefore(draggingCard, closestCard);
+        } else {
+            container.insertBefore(draggingCard, closestCard.nextSibling);
         }
     } else {
-        container.insertBefore(draggingCard, cards[0]);
+        // If no closest card found, append to the end
+        container.appendChild(draggingCard);
     }
 }
 
@@ -821,6 +889,8 @@ function handleDrop(event) {
     document.querySelectorAll('.project-item, .key-card').forEach(item => {
         item.classList.remove('drag-over');
         item.classList.remove('droppable');
+        item.classList.remove('drag-above');
+        item.classList.remove('drag-below');
     });
     
     // Check if we're dropping on a project item
@@ -845,9 +915,18 @@ function handleDrop(event) {
     const droppedCard = document.querySelector(`[data-key-id="${draggedKey}"]`);
     if (!droppedCard) return;
     
+    // Get all cards in their current order after the drag operation
     const cards = [...container.querySelectorAll('.key-card')];
     const newPosition = cards.indexOf(droppedCard);
+    
+    // Only proceed if the position has actually changed
     if (newPosition === -1) return;
+    
+    // Get the original position before dragging
+    const originalPosition = keys.findIndex(k => k.id == draggedKey);
+    
+    // Only proceed if the position has actually changed
+    if (originalPosition === newPosition) return;
     
     handleKeyReorder(draggedKey, newPosition, droppedCard);
 }
@@ -888,11 +967,23 @@ async function handleKeyReorder(keyId, newPosition, droppedCard) {
             
             setTimeout(() => {
                 droppedCard.style.transition = '';
-            }, 300);
-        }, 300);
+            }, 600);
+        }, 600);
         
-        // Refresh the keys display
-        await fetchKeys();
+        // Update the local keys array to match the new order
+        // This helps prevent unnecessary refreshes
+        if (keys && keys.length > 0) {
+            const keyToMove = keys.find(k => k.id == keyId);
+            if (keyToMove) {
+                // Remove the key from its current position
+                keys = keys.filter(k => k.id != keyId);
+                // Insert it at the new position
+                keys.splice(newPosition, 0, keyToMove);
+            }
+        } else {
+            // If we don't have the keys array or it's empty, fetch keys
+            await fetchKeys();
+        }
     } catch (error) {
         console.error('Error reordering key:', error);
         showNotification(error.message, 'error');
@@ -2685,11 +2776,18 @@ async function performKeyMove(keyId, targetProjectId, shouldCopy = false, passwo
 // Update the handleKeyDrop function
 async function handleKeyDrop(event, targetProjectId) {
     event.preventDefault();
+    event.stopPropagation();
+    
+    // Get the key ID from the dataTransfer
     const keyId = event.dataTransfer.getData('text/plain');
+    if (!keyId) return;
+    
+    // Convert targetProjectId to integer
+    targetProjectId = parseInt(targetProjectId);
     
     // Don't do anything if dropping onto the same project
-    const key = keys.find(k => k.id === keyId);
-    if (key && key.project_id === targetProjectId) {
+    const key = window.keys.find(k => k.id == keyId);
+    if (!key || key.project_id === targetProjectId) {
         return;
     }
     
