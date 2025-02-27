@@ -1,0 +1,154 @@
+/* Drag and Drop Component Styles */
+
+/* Key card drag styles */
+.key-card.dragging {
+  cursor: grabbing;
+  opacity: 0.5;
+  transform: scale(0.95);
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
+  z-index: 100;
+  background: var(--card);
+  border: 1px solid var(--primary);
+}
+
+[data-theme="dark"] .key-card.dragging {
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.4);
+}
+
+.key-card.drag-over {
+  transform: scale(1.02);
+  border: 2px dashed var(--primary);
+  background: var(--hover);
+  transition: all 0.2s ease;
+}
+
+/* New styles for drag-above and drag-below indicators */
+.key-card.drag-above {
+  border-top: 3px solid var(--primary);
+  margin-top: 3px;
+  transform: translateY(-2px);
+  transition: all 0.15s ease;
+}
+
+.key-card.drag-below {
+  border-bottom: 3px solid var(--primary);
+  margin-bottom: 3px;
+  transform: translateY(2px);
+  transition: all 0.15s ease;
+}
+
+/* Style for the body when dragging a key */
+body.key-dragging {
+  cursor: grabbing;
+}
+
+body.key-dragging .key-card:not(.dragging) {
+  transition: transform 0.2s ease, border 0.2s ease;
+}
+
+/* Project item drag styles */
+.project-item.dragging {
+  cursor: grabbing;
+  opacity: 0.7;
+  transform: scale(0.98);
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
+  z-index: 100;
+  background: var(--card);
+  border: 1px solid var(--primary);
+  transition: all 0.2s ease;
+}
+
+[data-theme="dark"] .project-item.dragging {
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.4);
+}
+
+.project-item.drag-over {
+  transform: scale(1.02);
+  border: 2px dashed var(--primary);
+  background-color: var(--hover);
+  transition: all 0.2s ease;
+}
+
+.project-item.drag-above {
+  border-top: 3px solid var(--primary);
+  padding-top: calc(0.75rem - 3px);
+}
+
+.project-item.drag-below {
+  border-bottom: 3px solid var(--primary);
+  padding-bottom: calc(0.75rem - 3px);
+}
+
+.project-item.reordering {
+  animation: pulse 1.5s infinite;
+}
+
+.project-item.target-highlight {
+  background-color: var(--hover);
+  transition: background-color 0.3s ease;
+}
+
+body.project-dragging .project-item:not(.dragging):not(.drag-over) {
+  opacity: 0.6;
+  transition: opacity 0.2s ease;
+}
+
+/* Droppable styles */
+.project-item.droppable {
+  border: 2px dashed transparent;
+  transition: all 0.2s ease;
+}
+
+.project-item.droppable.drag-over {
+  border-color: var(--primary);
+  background-color: var(--hover);
+  transform: scale(1.02);
+}
+
+/* Keys container drag styles */
+#keys-container {
+  overflow-y: auto;
+  max-height: calc(100vh - 200px);
+  padding-bottom: 2rem;
+}
+
+#keys-container.drag-over {
+  background-color: var(--hover);
+}
+
+/* Drag placeholder */
+.drag-placeholder {
+  height: 2px;
+  background-color: var(--primary);
+  margin: 8px 0;
+  transition: all 0.2s ease;
+  border-radius: 1px;
+  animation: placeholderPulse 1.5s ease-in-out infinite;
+}
+
+@keyframes placeholderPulse {
+  0% {
+    opacity: 0.6;
+    transform: scaleY(1);
+  }
+  50% {
+    opacity: 1;
+    transform: scaleY(1.5);
+  }
+  100% {
+    opacity: 0.6;
+    transform: scaleY(1);
+  }
+}
+
+@keyframes pulse {
+  0% {
+    opacity: 0.5;
+  }
+  50% {
+    opacity: 0.8;
+  }
+  100% {
+    opacity: 0.5;
+  }
+} 

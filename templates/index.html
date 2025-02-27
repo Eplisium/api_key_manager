@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>API Key Manager</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}">
 </head>
 <body>
     <div class="sidebar" id="sidebar">
@@ -13,12 +13,12 @@
                 <h2 class="font-semibold">Projects</h2>
                 <button class="btn btn-primary btn-sm" onclick="showProjectModal()">New Project</button>
             </div>
-            <button class="btn btn-icon w-full collapsed-new-project" onclick="showProjectModal()">
+            <button class="btn-icon w-full collapsed-new-project" onclick="showProjectModal()">
                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
                 <span>New Project</span>
                 <div class="project-tooltip">New Project</div>
             </button>
-            <button class="btn btn-icon w-full mb-4" onclick="showAllKeys()">
+            <button class="btn-icon w-full mb-4" onclick="showAllKeys()">
                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-list"><line x1="8" x2="21" y1="6" y2="6"/><line x1="8" x2="21" y1="12" y2="12"/><line x1="8" x2="21" y1="18" y2="18"/><line x1="3" x2="3.01" y1="6" y2="6"/><line x1="3" x2="3.01" y1="12" y2="12"/><line x1="3" x2="3.01" y1="18" y2="18"/></svg>
                 <span>Show All</span>
                 <div class="project-tooltip">Show All Keys</div>
@@ -34,8 +34,13 @@
             <div id="projects-list"></div>
         </div>
         <div class="theme-separator"></div>
+        <button class="download-db-btn" onclick="downloadDatabase()">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            <span>Download DB</span>
+            <div class="project-tooltip">Download Database</div>
+        </button>
         <div class="dropdown">
-            <button class="btn btn-icon w-full btn-download download-db-btn" onclick="toggleManageDBDropdown(event)">
+            <button class="manage-db-btn" onclick="toggleManageDBDropdown(event)">
                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2s-.9-2-2-2H5c-1.1 0-2 .9-2 2z"/><path d="M3 18c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2s-.9-2-2-2H5c-1.1 0-2 .9-2 2z"/><path d="M3 12c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2s-.9-2-2-2H5c-1.1 0-2 .9-2 2z"/></svg>
                 <span>Manage DB</span>
                 <div class="project-tooltip">Manage Database</div>

@@ -1,0 +1,61 @@
+/* Tooltips Component Styles */
+
+/* Custom Tooltip Style */
+.tooltip {
+  position: fixed;
+  background: var(--card);
+  color: var(--foreground);
+  padding: 0.75rem 1rem;
+  border-radius: 0.5rem;
+  font-size: 0.875rem;
+  white-space: nowrap;
+  z-index: 1000;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+  pointer-events: none;
+  border: 1px solid var(--border);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  transform: translateY(-50%);
+}
+
+[data-theme="dark"] .tooltip {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+.tooltip.show {
+  opacity: 1;
+}
+
+/* Project Tooltip */
+.project-tooltip {
+  display: none;
+  position: fixed;
+  left: 45px;
+  background: var(--card);
+  color: var(--foreground);
+  padding: 0.75rem 1rem;
+  border-radius: 0.5rem;
+  font-size: 0.875rem;
+  white-space: nowrap;
+  z-index: 2000;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+  pointer-events: none;
+  border: 1px solid var(--border);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+[data-theme="dark"] .project-tooltip {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+.sidebar.collapsed .project-item:hover .project-tooltip,
+.sidebar.collapsed .btn-icon.w-full:hover .project-tooltip,
+.sidebar.collapsed .download-db-btn:hover .project-tooltip,
+.sidebar.collapsed .manage-db-btn:hover .project-tooltip,
+.sidebar.collapsed .theme-toggle:hover .project-tooltip,
+.sidebar.collapsed .clear-all-btn:hover .project-tooltip,
+.sidebar.collapsed .collapsed-new-project:hover .project-tooltip {
+  display: block;
+  opacity: 1;
+} 

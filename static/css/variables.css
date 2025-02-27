@@ -1,0 +1,37 @@
+/* Theme variables */
+
+:root {
+  --background: hsl(0, 0%, 100%);
+  --foreground: hsl(240, 10%, 3.9%);
+  --card: hsl(0, 0%, 100%);
+  --card-foreground: hsl(240, 10%, 3.9%);
+  --primary: hsl(240, 5.9%, 10%);
+  --primary-foreground: hsl(0, 0%, 98%);
+  --destructive: hsl(0, 84.2%, 60.2%);
+  --border: hsl(240, 5.9%, 90%);
+  --separator: hsl(240, 5.9%, 90%);
+  --muted: hsl(240, 3.8%, 46.1%);
+  --hover: hsl(240, 4.8%, 95.9%);
+  --danger: #dc2626;
+  --danger-hover: #b91c1c;
+  --warning: #f59e0b;
+  --warning-hover: #d97706;
+}
+
+[data-theme="dark"] {
+  --background: hsl(240, 10%, 8%);
+  --foreground: hsl(0, 0%, 98%);
+  --card: hsl(240, 10%, 12%);
+  --card-foreground: hsl(0, 0%, 98%);
+  --primary: hsl(0, 0%, 98%);
+  --primary-foreground: hsl(240, 10%, 3.9%);
+  --destructive: hsl(0, 84.2%, 60.2%);
+  --border: hsl(240, 10%, 18%);
+  --separator: hsl(240, 10%, 18%);
+  --muted: hsl(240, 5%, 64.9%);
+  --hover: hsla(240, 10%, 25%, 0.8);
+  --danger: #ef4444;
+  --danger-hover: #dc2626;
+  --warning: #f59e0b;
+  --warning-hover: #d97706;
+} 

@@ -1,0 +1,49 @@
+/* Base styles and reset */
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  font-family: 'Inter', sans-serif;
+}
+
+body {
+  background-color: var(--background);
+  color: var(--foreground);
+  min-height: 100vh;
+  overflow: hidden;
+}
+
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 2rem;
+}
+
+.main-content {
+  margin-left: 280px;
+  padding: 2rem;
+  padding-top: 1rem;
+  transition: all 0.3s ease;
+  height: 100vh;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+}
+
+.main-content.expanded {
+  margin-left: 40px;
+}
+
+/* Common utility classes */
+.hidden {
+  display: none;
+}
+
+.text-gray-500 {
+  color: var(--muted);
+}
+
+.text-gray-600 {
+  color: var(--muted);
+} 

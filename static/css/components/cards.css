@@ -1,0 +1,161 @@
+/* Card Component Styles */
+
+.keys-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 1.5rem;
+  max-height: calc(100vh - 160px);
+  overflow-y: auto;
+  padding-right: 1rem;
+  padding-top: 1rem;
+  margin-top: 0.5rem;
+  scrollbar-width: thin;
+  scrollbar-color: var(--border) transparent;
+}
+
+.key-card {
+  background: var(--card);
+  border-radius: 0.5rem;
+  padding: 1.5rem;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+  transition: all 0.2s ease;
+  border: 1px solid var(--border);
+  cursor: grab;
+  position: relative;
+  z-index: 1;
+}
+
+[data-theme="dark"] .key-card {
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.4);
+}
+
+.key-card:active {
+  cursor: grabbing;
+}
+
+.key-card:not(.dragging):hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  z-index: 2;
+}
+
+[data-theme="dark"] .key-card:not(.dragging):hover {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+/* Key content styles */
+.key-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  min-width: 0;
+}
+
+.key-config {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.key-config .input-group {
+  margin-bottom: 0;
+}
+
+.key-title {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.key-name {
+  font-size: 1.1rem;
+  color: var(--foreground);
+}
+
+.key-value {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.25rem 0.5rem;
+  background: var(--hover);
+  border-radius: 0.375rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.key-value:hover {
+  background: var(--border);
+}
+
+.key-text {
+  cursor: pointer;
+  transition: opacity 0.2s ease;
+}
+
+.key-text:hover {
+  opacity: 0.8;
+}
+
+/* Key badge styles */
+.key-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.25rem 0.5rem;
+  border-radius: 0.25rem;
+  font-size: 0.75rem;
+  font-weight: 500;
+  margin-top: 0.25rem;
+}
+
+.key-badge.encrypted {
+  background-color: var(--hover);
+  color: var(--muted);
+}
+
+.key-badge svg {
+  width: 12px;
+  height: 12px;
+}
+
+/* Key number styles */
+.key-number {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 2rem;
+  height: 2rem;
+  background: var(--hover);
+  border-radius: 0.5rem;
+  font-weight: 500;
+  font-size: 0.875rem;
+  color: var(--foreground);
+  flex-shrink: 0;
+}
+
+/* Dark mode enhancements */
+[data-theme="dark"] .key-value {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+[data-theme="dark"] .key-value:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+/* Error message card */
+.error-message {
+  background: var(--card);
+  color: var(--foreground);
+  padding: 1rem 1.5rem;
+  border-radius: 0.5rem;
+  text-align: center;
+  margin: 1rem;
+  border: 1px solid var(--border);
+  border-left: 4px solid hsl(0, 84.2%, 60.2%);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+[data-theme="dark"] .error-message {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+} 

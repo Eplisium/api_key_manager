@@ -1,0 +1,94 @@
+/* Notifications Component Styles */
+
+/* Notification Style */
+.notification {
+  position: fixed;
+  bottom: 2rem;
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--card);
+  color: var(--foreground);
+  padding: 1rem 1.5rem;
+  border-radius: 0.5rem;
+  font-size: 0.875rem;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  border: 1px solid var(--border);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  animation: slideUpFade 0.3s ease-out;
+  z-index: 1000;
+  opacity: 1;
+  transition: all 0.3s ease-out;
+}
+
+[data-theme="dark"] .notification {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+.notification.success {
+  border-left: 4px solid hsl(142.1, 76.2%, 36.3%);
+}
+
+.notification.error {
+  border-left: 4px solid hsl(0, 84.2%, 60.2%);
+  cursor: pointer;
+}
+
+.notification.error:hover {
+  background: var(--hover);
+}
+
+.notification.error .copy-icon {
+  opacity: 0.7;
+  transition: opacity 0.2s ease;
+}
+
+.notification.error:hover .copy-icon {
+  opacity: 1;
+}
+
+/* Copy Success Notification */
+.copy-success {
+  position: fixed;
+  bottom: 2rem;
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--card);
+  color: var(--foreground);
+  padding: 1rem 1.5rem;
+  border-radius: 0.5rem;
+  font-size: 0.875rem;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  border: 1px solid var(--border);
+  border-left: 4px solid hsl(142.1, 76.2%, 36.3%);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  animation: slideUpFade 0.3s ease-out;
+  z-index: 1000;
+}
+
+[data-theme="dark"] .copy-success {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+/* Clear Notification */
+.clear-notification {
+  position: fixed;
+  bottom: 1rem;
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--destructive);
+  color: white;
+  padding: 0.75rem 1.5rem;
+  border-radius: 0.375rem;
+  font-size: 0.875rem;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  animation: slideUpFade 0.3s ease-out;
+  z-index: 1000;
+}
+
+[data-theme="dark"] .clear-notification {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+} 

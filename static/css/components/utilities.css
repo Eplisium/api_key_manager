@@ -1,0 +1,50 @@
+/* Utilities Component Styles */
+
+/* Utility classes */
+.hidden {
+  display: none;
+}
+
+.text-gray-500 {
+  color: var(--muted);
+}
+
+.text-gray-600 {
+  color: var(--muted);
+}
+
+/* Show class for dropdowns and modals */
+.show {
+  display: block;
+}
+
+/* Disabled state */
+.disabled,
+:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* Width utilities */
+.w-full {
+  width: 100%;
+}
+
+/* Scrollbar styles */
+.scrollbar-thin {
+  scrollbar-width: thin;
+  scrollbar-color: var(--border) transparent;
+}
+
+.scrollbar-thin::-webkit-scrollbar {
+  width: 6px;
+}
+
+.scrollbar-thin::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.scrollbar-thin::-webkit-scrollbar-thumb {
+  background-color: var(--border);
+  border-radius: 3px;
+} 

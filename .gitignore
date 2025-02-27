@@ -37,6 +37,7 @@ instance/
 *.db
 api_key_manager.log
 todo.txt
+static/styles.css.bak
 
 # Keep
 !logging.conf 
