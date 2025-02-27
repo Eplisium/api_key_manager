@@ -1611,29 +1611,29 @@ body.project-dragging .project-item:not(.dragging):not(.drag-over) {
 }
 
 .word-select-btn.active {
-    background: var(--primary);
+    background-color: var(--primary);
     color: gray;
     border-color: var(--primary);
 }
 
 .word-select-btn.active:hover {
-    background: var(--primary-hover);
+    background-color: #0056b3;
 }
 
 [data-theme="dark"] .word-select-btn {
-    background: var(--card);
+    background-color: var(--card);
 }
 
 [data-theme="dark"] .word-select-btn:hover {
-    background: var(--hover);
+    background-color: var(--hover);
 }
 
 [data-theme="dark"] .word-select-btn.active {
-    background: var(--primary);
+    background-color: var(--primary);
 }
 
 [data-theme="dark"] .word-select-btn.active:hover {
-    background: var(--primary-hover);
+    background-color: #0056b3;
 }
 
 .color-wheel {
@@ -1707,12 +1707,25 @@ body.project-dragging .project-item:not(.dragging):not(.drag-over) {
 }
 
 .preview-text {
+    padding: 12px;
+    border-radius: 4px;
+    transition: background-color 0.3s ease;
+    font-size: 20px;
+    font-weight: bold;
+    text-align: center;
     display: flex;
-    gap: 0.375rem;
     justify-content: center;
-    font-size: 1.25rem;
-    font-weight: 600;
-    color: var(--foreground);
+    gap: 8px;
+}
+
+.preview-text.dark-bg {
+    background-color: #212529;
+    color: #ffffff;
+}
+
+.preview-text.light-bg {
+    background-color: #f8f9fa;
+    color: #212529;
 }
 
 .color-picker .modal-footer {
@@ -1756,7 +1769,7 @@ body.project-dragging .project-item:not(.dragging):not(.drag-over) {
 }
 
 [data-theme="dark"] .word-select-btn {
-    background: var(--card);
+    background-color: var(--card);
 }
 
 [data-theme="dark"] .rgb-input,
@@ -1926,15 +1939,6 @@ body.project-dragging .project-item:not(.dragging):not(.drag-over) {
 
 .btn-download .animate-spin {
     animation: spin 1s linear infinite;
-}
-
-@keyframes spin {
-    from {
-        transform: rotate(0deg);
-    }
-    to {
-        transform: rotate(360deg);
-    }
 }
 
 .download-db-btn {
@@ -2409,4 +2413,96 @@ body.project-dragging .project-item:not(.dragging):not(.drag-over) {
 .selected-project-badge .project-name.rainbow {
     animation: rainbow 3s linear infinite;
     animation-delay: 0s;
+}
+
+/* Color options buttons */
+.color-options {
+    display: flex;
+    gap: 8px;
+    margin-top: 8px;
+}
+
+.color-option-btn {
+    flex: 1;
+    padding: 8px 12px;
+    border-radius: 4px;
+    border: 1px solid #ddd;
+    background-color: #f8f9fa;
+    cursor: pointer;
+    font-size: 14px;
+    transition: all 0.2s ease;
+}
+
+.color-option-btn:hover {
+    background-color: #e9ecef;
+}
+
+.color-option-btn.active {
+    background-color: #007bff;
+    color: white;
+    border-color: #007bff;
+}
+
+.color-option-btn.active:hover {
+    background-color: #0056b3;
+}
+
+/* Preview controls */
+.preview-controls {
+    margin-top: 12px;
+    display: flex;
+    justify-content: flex-end;
+}
+
+.preview-bg-label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 14px;
+}
+
+.preview-bg-label select {
+    padding: 4px 8px;
+    border-radius: 4px;
+    border: 1px solid #ddd;
+}
+
+/* Rainbow preview */
+.preview-text.rainbow .preview-api,
+.preview-text.rainbow .preview-key,
+.preview-text.rainbow .preview-manager {
+    animation: rainbow 3s linear infinite;
+    animation-delay: 0s;
+}
+
+.preview-text.rainbow span {
+    color: inherit !important;
+    transition: none !important;
+}
+
+/* Dark theme adjustments */
+[data-theme="dark"] .color-option-btn {
+    background-color: #2c3034;
+    border-color: #495057;
+    color: #e9ecef;
+}
+
+[data-theme="dark"] .color-option-btn:hover {
+    background-color: #343a40;
+}
+
+[data-theme="dark"] .color-option-btn.active {
+    background-color: #0d6efd;
+    border-color: #0d6efd;
+}
+
+[data-theme="dark"] .preview-bg-label select {
+    background-color: #2c3034;
+    border-color: #495057;
+    color: #e9ecef;
+}
+
+[data-theme="dark"] .preview-text.light-bg {
+    background-color: #f8f9fa;
+    color: #212529;
 }

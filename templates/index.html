@@ -76,7 +76,7 @@
 
     <div class="main-content" id="main-content">
         <header class="header">
-            <h1 class="title">API <span class="key-text" onclick="toggleRainbow(event)">Key</span> Manager</h1>
+            <h1 class="title"><span class="title-api">API</span> <span class="title-key key-text" onclick="toggleRainbow(event)">Key</span> <span class="title-manager">Manager</span></h1>
             <div id="selected-project-display" class="selected-project-badge">
                 <span class="badge-label">Project:</span>
                 <span class="project-name" id="selected-project-name">All Projects</span>
@@ -309,6 +309,13 @@
                         </div>
                     </div>
                     <div class="color-picker-section">
+                        <label>Color Options</label>
+                        <div class="color-options">
+                            <button class="color-option-btn" id="solid-color-btn" data-option="solid">Solid Color</button>
+                            <button class="color-option-btn" id="rainbow-btn" data-option="rainbow">Rainbow</button>
+                        </div>
+                    </div>
+                    <div class="color-picker-section" id="color-picker-controls">
                         <label>Color Wheel</label>
                         <input type="color" id="color-wheel" class="color-wheel">
                     </div>
@@ -342,6 +349,15 @@
                             <span class="preview-api">API</span>
                             <span class="preview-key">Key</span>
                             <span class="preview-manager">Manager</span>
+                        </div>
+                        <div class="preview-controls">
+                            <label class="preview-bg-label">
+                                <span>Background:</span>
+                                <select id="preview-background">
+                                    <option value="dark">Dark</option>
+                                    <option value="light">Light</option>
+                                </select>
+                            </label>
                         </div>
                     </div>
                 </div>

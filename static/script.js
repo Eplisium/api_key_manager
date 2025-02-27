@@ -1661,6 +1661,7 @@ function resetTitleColor() {
 }
 
 let selectedWord = 'all';
+let selectedColorOption = 'solid'; // Default to solid color
 
 function showColorPickerModal(event) {
     if (event) {
@@ -1678,6 +1679,38 @@ function showColorPickerModal(event) {
     document.querySelectorAll('.word-select-btn').forEach(btn => {
         btn.classList.toggle('active', btn.dataset.word === 'all');
     });
+    
+    // Check if rainbow is active
+    const isRainbow = localStorage.getItem('titleRainbow') === 'true';
+    if (isRainbow) {
+        selectedColorOption = 'rainbow';
+        document.getElementById('rainbow-btn').classList.add('active');
+        document.getElementById('solid-color-btn').classList.remove('active');
+        document.getElementById('color-picker-controls').style.display = 'none';
+        document.getElementById('hex-color').parentElement.parentElement.style.display = 'none';
+        document.getElementById('rgb-r').parentElement.parentElement.parentElement.style.display = 'none';
+        
+        // Update preview to show rainbow
+        const previewText = document.querySelector('.preview-text');
+        previewText.classList.add('rainbow');
+    } else {
+        selectedColorOption = 'solid';
+        document.getElementById('solid-color-btn').classList.add('active');
+        document.getElementById('rainbow-btn').classList.remove('active');
+        document.getElementById('color-picker-controls').style.display = 'block';
+        document.getElementById('hex-color').parentElement.parentElement.style.display = 'block';
+        document.getElementById('rgb-r').parentElement.parentElement.parentElement.style.display = 'block';
+        
+        // Update preview to show solid color
+        const previewText = document.querySelector('.preview-text');
+        previewText.classList.remove('rainbow');
+    }
+    
+    // Set initial preview background based on current theme
+    const currentTheme = document.documentElement.getAttribute('data-theme');
+    const previewBg = document.getElementById('preview-background');
+    previewBg.value = currentTheme || 'light';
+    updatePreviewBackground();
 }
 
 function hideColorPickerModal() {
@@ -1685,10 +1718,6 @@ function hideColorPickerModal() {
 }
 
 function initializeColorPicker(color) {
-    // Remove rainbow effect if active
-    document.querySelector('.title').classList.remove('rainbow');
-    localStorage.setItem('titleRainbow', 'false');
-
     // Set initial values
     document.getElementById('color-wheel').value = color;
     document.getElementById('hex-color').value = color.substring(1);
@@ -1721,6 +1750,13 @@ function rgbToHex(r, g, b) {
 
 function updatePreviewColors() {
     const color = document.getElementById('color-wheel').value;
+    if (selectedColorOption === 'rainbow') {
+        document.querySelector('.preview-text').classList.add('rainbow');
+        return;
+    }
+    
+    document.querySelector('.preview-text').classList.remove('rainbow');
+    
     if (selectedWord === 'all') {
         document.querySelectorAll('.preview-text span').forEach(span => {
             span.style.color = color;
@@ -1730,52 +1766,100 @@ function updatePreviewColors() {
     }
 }
 
-function applyCustomColor() {
-    const color = document.getElementById('color-wheel').value;
-    const title = document.querySelector('.title');
+function updatePreviewBackground() {
+    const previewText = document.querySelector('.preview-text');
+    const bgValue = document.getElementById('preview-background').value;
+    const hasRainbow = previewText.classList.contains('rainbow');
     
-    // Remove rainbow effect from title and project name
-    title.classList.remove('rainbow');
-    document.getElementById('selected-project-name').classList.remove('rainbow');
-    localStorage.setItem('titleRainbow', 'false');
+    previewText.classList.remove('dark-bg', 'light-bg');
+    previewText.classList.add(`${bgValue}-bg`);
     
-    if (selectedWord === 'all') {
-        document.querySelectorAll('.title span').forEach(span => {
-            span.style.color = color;
-            localStorage.setItem(`titleColor_${span.className.split('-')[1]}`, color);
-        });
-    } else {
-        const targetSpan = document.querySelector(`.title-${selectedWord}`);
-        targetSpan.style.color = color;
-        localStorage.setItem(`titleColor_${selectedWord}`, color);
+    // Preserve rainbow class if it was active
+    if (hasRainbow) {
+        previewText.classList.add('rainbow');
     }
-    // >>> NEW: Sync selected project badge color with applied color
-    document.getElementById('selected-project-name').style.color = color;
+}
+
+function applyCustomColor() {
+    const title = document.querySelector('.title');
+    const projectBadge = document.getElementById('selected-project-name');
+    
+    if (selectedColorOption === 'rainbow') {
+        // Apply rainbow effect
+        title.classList.add('rainbow');
+        projectBadge.classList.add('rainbow');
+        localStorage.setItem('titleRainbow', 'true');
+        
+        // Clear any custom colors
+        document.querySelectorAll('.title span').forEach(span => {
+            span.style.color = '';
+            localStorage.removeItem(`titleColor_${span.className.split('-')[1]}`);
+        });
+        projectBadge.style.color = '';
+    } else {
+        // Apply solid color
+        const color = document.getElementById('color-wheel').value;
+        
+        // Remove rainbow effect
+        title.classList.remove('rainbow');
+        projectBadge.classList.remove('rainbow');
+        localStorage.setItem('titleRainbow', 'false');
+        
+        if (selectedWord === 'all') {
+            document.querySelectorAll('.title span').forEach(span => {
+                span.style.color = color;
+                localStorage.setItem(`titleColor_${span.className.split('-')[1]}`, color);
+            });
+        } else {
+            const targetSpan = document.querySelector(`.title-${selectedWord}`);
+            targetSpan.style.color = color;
+            localStorage.setItem(`titleColor_${selectedWord}`, color);
+        }
+        // Sync selected project badge color with applied color
+        projectBadge.style.color = color;
+    }
     
     hideColorPickerModal();
 }
 
-// Restore custom colors on page load
-document.addEventListener('DOMContentLoaded', () => {
-    ['api', 'key', 'manager'].forEach(word => {
-        const savedColor = localStorage.getItem(`titleColor_${word}`);
-        if (savedColor) {
-            document.querySelector(`.title-${word}`).style.color = savedColor;
-        }
+function resetTitleColor() {
+    // Remove any custom colors and rainbow effect from title
+    const title = document.querySelector('.title');
+    title.classList.remove('rainbow');
+    document.querySelectorAll('.title span').forEach(span => {
+        span.style.color = '';
+        localStorage.removeItem(`titleColor_${span.className.split('-')[1]}`);
     });
-});
+    localStorage.setItem('titleRainbow', 'false');
 
-// Add event listeners for word selection buttons
-document.querySelectorAll('.word-select-btn').forEach(btn => {
-    btn.addEventListener('click', () => {
-        document.querySelectorAll('.word-select-btn').forEach(b => b.classList.remove('active'));
-        btn.classList.add('active');
-        selectedWord = btn.dataset.word;
-        
-        // Update preview with current colors
-        updatePreviewColors();
+    // Reset color picker inputs to default color (#000000 for light mode, #FFFFFF for dark mode)
+    const defaultColor = document.documentElement.getAttribute('data-theme') === 'dark' ? '#FFFFFF' : '#000000';
+    document.getElementById('color-wheel').value = defaultColor;
+    document.getElementById('hex-color').value = defaultColor.substring(1);
+    const rgb = hexToRgb(defaultColor);
+    document.getElementById('rgb-r').value = rgb.r;
+    document.getElementById('rgb-g').value = rgb.g;
+    document.getElementById('rgb-b').value = rgb.b;
+
+    // Update preview text colors
+    document.querySelector('.preview-text').classList.remove('rainbow');
+    document.querySelectorAll('.preview-text span').forEach(span => {
+        span.style.color = defaultColor;
     });
-});
+    
+    // Reset color option to solid
+    selectedColorOption = 'solid';
+    document.getElementById('solid-color-btn').classList.add('active');
+    document.getElementById('rainbow-btn').classList.remove('active');
+    document.getElementById('color-picker-controls').style.display = 'block';
+    document.getElementById('hex-color').parentElement.parentElement.style.display = 'block';
+    document.getElementById('rgb-r').parentElement.parentElement.parentElement.style.display = 'block';
+    
+    // Also reset project badge color to the default
+    const projectBadge = document.getElementById('selected-project-name');
+    projectBadge.style.color = '';
+    projectBadge.classList.remove('rainbow');
+}
 
 // Add event listeners for color inputs
 document.getElementById('color-wheel').addEventListener('input', (e) => {
@@ -1813,9 +1897,86 @@ function handleRgbInput() {
     }
 }
 
-document.getElementById('rgb-r').addEventListener('input', handleRgbInput);
-document.getElementById('rgb-g').addEventListener('input', handleRgbInput);
-document.getElementById('rgb-b').addEventListener('input', handleRgbInput);
+function updateColorPreview(color) {
+    if (selectedColorOption === 'rainbow') return;
+    
+    if (selectedWord === 'all') {
+        document.querySelectorAll('.preview-text span').forEach(span => {
+            span.style.color = color;
+        });
+    } else {
+        document.querySelector(`.preview-${selectedWord}`).style.color = color;
+    }
+}
+
+// Add event listeners for word selection buttons
+document.addEventListener('DOMContentLoaded', () => {
+    // Word selection buttons
+    document.querySelectorAll('.word-select-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            document.querySelectorAll('.word-select-btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            selectedWord = btn.dataset.word;
+            
+            // Update preview with current colors
+            updatePreviewColors();
+        });
+    });
+    
+    // Color option buttons
+    document.querySelectorAll('.color-option-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            document.querySelectorAll('.color-option-btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            selectedColorOption = btn.dataset.option;
+            
+            if (selectedColorOption === 'rainbow') {
+                // Hide color picker controls when rainbow is selected
+                document.getElementById('color-picker-controls').style.display = 'none';
+                document.getElementById('hex-color').parentElement.parentElement.style.display = 'none';
+                document.getElementById('rgb-r').parentElement.parentElement.parentElement.style.display = 'none';
+                
+                // Update preview to show rainbow
+                document.querySelector('.preview-text').classList.add('rainbow');
+            } else {
+                // Show color picker controls when solid color is selected
+                document.getElementById('color-picker-controls').style.display = 'block';
+                document.getElementById('hex-color').parentElement.parentElement.style.display = 'block';
+                document.getElementById('rgb-r').parentElement.parentElement.parentElement.style.display = 'block';
+                
+                // Update preview to show solid color
+                const previewText = document.querySelector('.preview-text');
+                previewText.classList.remove('rainbow');
+                updatePreviewColors();
+            }
+        });
+    });
+    
+    // Preview background selector
+    document.getElementById('preview-background').addEventListener('change', updatePreviewBackground);
+    
+    // RGB inputs
+    document.getElementById('rgb-r').addEventListener('input', handleRgbInput);
+    document.getElementById('rgb-g').addEventListener('input', handleRgbInput);
+    document.getElementById('rgb-b').addEventListener('input', handleRgbInput);
+    
+    // Restore custom colors on page load
+    ['api', 'key', 'manager'].forEach(word => {
+        const savedColor = localStorage.getItem(`titleColor_${word}`);
+        if (savedColor) {
+            document.querySelector(`.title-${word}`).style.color = savedColor;
+        }
+    });
+    
+    // Restore rainbow effect if it was active
+    const wasRainbow = localStorage.getItem('titleRainbow') === 'true';
+    if (wasRainbow) {
+        const title = document.querySelector('.title');
+        const projectBadge = document.getElementById('selected-project-name');
+        title.classList.add('rainbow');
+        projectBadge.classList.add('rainbow');
+    }
+});
 
 // Add right-click handler for the title
 document.querySelector('.title').addEventListener('contextmenu', (event) => {
