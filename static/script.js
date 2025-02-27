@@ -2421,7 +2421,8 @@ async function performEdit(keyData) {
 }
 
 function downloadDatabase() {
-    const button = document.querySelector('.download-db-btn');
+    // Target the specific download button, not the "New Project" or "Show All" buttons
+    const button = document.querySelector('.download-db-btn:not(.collapsed-new-project):not(.collapsed-show-all)');
     const originalContent = button.innerHTML;
     
     // Disable button and show loading state
@@ -2482,7 +2483,7 @@ function toggleManageDBDropdown(event) {
         event.stopPropagation();
     }
     const dropdown = document.getElementById('manage-db-dropdown');
-    const button = document.querySelector('.download-db-btn');
+    const button = document.querySelector('.manage-db-btn');
     const sidebar = document.getElementById('sidebar');
     
     // Toggle dropdown visibility
@@ -2517,6 +2518,10 @@ function toggleManageDBDropdown(event) {
                 dropdown.style.top = '50%';
                 dropdown.style.transform = 'translate(-50%, -50%)';
             }
+            
+            // Ensure the dropdown is visible
+            dropdown.style.display = 'block';
+            dropdown.style.zIndex = '2000';
         } else {
             // For expanded sidebar, let CSS handle the positioning
             // Just check if we need to flip it above the button
@@ -2534,7 +2539,7 @@ function toggleManageDBDropdown(event) {
         
         // Add click listener to close dropdown when clicking outside
         function closeDropdown(e) {
-            if (!e.target.closest('.download-db-btn') && !e.target.closest('.manage-db-dropdown')) {
+            if (!e.target.closest('.manage-db-btn') && !e.target.closest('.manage-db-dropdown')) {
                 dropdown.classList.remove('show');
                 // Reset positioning styles
                 dropdown.style.left = '';
@@ -2544,6 +2549,8 @@ function toggleManageDBDropdown(event) {
                 dropdown.style.transform = '';
                 dropdown.style.marginTop = '';
                 dropdown.style.marginBottom = '';
+                dropdown.style.display = '';
+                dropdown.style.zIndex = '';
                 document.removeEventListener('click', closeDropdown);
             }
         }

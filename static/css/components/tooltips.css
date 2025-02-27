@@ -55,7 +55,8 @@
 .sidebar.collapsed .manage-db-btn:hover .project-tooltip,
 .sidebar.collapsed .theme-toggle:hover .project-tooltip,
 .sidebar.collapsed .clear-all-btn:hover .project-tooltip,
-.sidebar.collapsed .collapsed-new-project:hover .project-tooltip {
+.sidebar.collapsed .collapsed-new-project:hover .project-tooltip,
+.sidebar.collapsed .collapsed-show-all:hover .project-tooltip {
   display: block;
   opacity: 1;
 } 
