@@ -17,6 +17,7 @@
   font-size: 1.875rem;
   font-weight: 700;
   color: var(--foreground);
+  position: relative;
 }
 
 .header-actions {
@@ -28,19 +29,96 @@
 /* Title animation and styling */
 .title span {
   transition: color 0.2s ease;
+  position: relative;
+  z-index: 1;
 }
 
-.title.rainbow,
+/* Enhanced rainbow effect for entire title */
+.title.rainbow {
+  position: relative;
+  overflow: visible;
+}
+
+.title.rainbow::before {
+  content: '';
+  position: absolute;
+  top: -5px;
+  left: -10px;
+  right: -10px;
+  bottom: -5px;
+  background: linear-gradient(
+    124deg,
+    rgba(255, 0, 0, 0.05) 0%,
+    rgba(255, 154, 0, 0.05) 10%,
+    rgba(208, 222, 33, 0.05) 20%,
+    rgba(79, 220, 74, 0.05) 30%,
+    rgba(63, 218, 216, 0.05) 40%,
+    rgba(47, 201, 226, 0.05) 50%,
+    rgba(28, 127, 238, 0.05) 60%,
+    rgba(95, 21, 242, 0.05) 70%,
+    rgba(186, 12, 248, 0.05) 80%,
+    rgba(251, 7, 217, 0.05) 90%,
+    rgba(255, 0, 0, 0.05) 100%
+  );
+  border-radius: 12px;
+  z-index: 0;
+  animation: rainbow-bg 6s linear infinite;
+}
+
 .title.rainbow .title-api,
 .title.rainbow .title-key,
 .title.rainbow .title-manager {
   animation: rainbow 3s linear infinite;
+}
+
+.title.rainbow .title-api {
   animation-delay: 0s;
 }
 
-.title.rainbow span {
+.title.rainbow .title-key {
+  animation-delay: -1s;
+}
+
+.title.rainbow .title-manager {
+  animation-delay: -2s;
+}
+
+/* Individual rainbow effects for title elements */
+.title-api.rainbow,
+.title-key.rainbow,
+.title-manager.rainbow {
+  position: relative;
+  z-index: 1;
+  animation: rainbow 3s linear infinite;
   color: inherit !important;
-  transition: none !important;
+}
+
+.title-api.rainbow::before,
+.title-key.rainbow::before,
+.title-manager.rainbow::before {
+  content: '';
+  position: absolute;
+  top: -3px;
+  left: -5px;
+  right: -5px;
+  bottom: -3px;
+  background: linear-gradient(
+    124deg,
+    rgba(255, 0, 0, 0.05) 0%,
+    rgba(255, 154, 0, 0.05) 10%,
+    rgba(208, 222, 33, 0.05) 20%,
+    rgba(79, 220, 74, 0.05) 30%,
+    rgba(63, 218, 216, 0.05) 40%,
+    rgba(47, 201, 226, 0.05) 50%,
+    rgba(28, 127, 238, 0.05) 60%,
+    rgba(95, 21, 242, 0.05) 70%,
+    rgba(186, 12, 248, 0.05) 80%,
+    rgba(251, 7, 217, 0.05) 90%,
+    rgba(255, 0, 0, 0.05) 100%
+  );
+  border-radius: 6px;
+  z-index: -1;
+  animation: rainbow-bg 6s linear infinite;
 }
 
 .title-key {
@@ -72,6 +150,7 @@
   pointer-events: none;
   border: 1px solid var(--border);
   white-space: nowrap;
+  z-index: 2;
 }
 
 .title-key:hover::after {
@@ -96,6 +175,7 @@
   border: 1px solid var(--border);
   transition: all 0.2s ease;
   max-width: 300px;
+  position: relative;
 }
 
 .selected-project-badge .badge-label {
@@ -108,11 +188,39 @@
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  position: relative;
+  z-index: 1;
 }
 
 .selected-project-badge .project-name.rainbow {
   animation: rainbow 3s linear infinite;
-  animation-delay: 0s;
+  position: relative;
+}
+
+.selected-project-badge .project-name.rainbow::before {
+  content: '';
+  position: absolute;
+  top: -5px;
+  left: -10px;
+  right: -10px;
+  bottom: -5px;
+  background: linear-gradient(
+    124deg,
+    rgba(255, 0, 0, 0.05) 0%,
+    rgba(255, 154, 0, 0.05) 10%,
+    rgba(208, 222, 33, 0.05) 20%,
+    rgba(79, 220, 74, 0.05) 30%,
+    rgba(63, 218, 216, 0.05) 40%,
+    rgba(47, 201, 226, 0.05) 50%,
+    rgba(28, 127, 238, 0.05) 60%,
+    rgba(95, 21, 242, 0.05) 70%,
+    rgba(186, 12, 248, 0.05) 80%,
+    rgba(251, 7, 217, 0.05) 90%,
+    rgba(255, 0, 0, 0.05) 100%
+  );
+  border-radius: 8px;
+  z-index: 0;
+  animation: rainbow-bg 6s linear infinite;
 }
 
 /* When sidebar is collapsed */

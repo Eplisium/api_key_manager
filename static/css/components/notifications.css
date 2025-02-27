@@ -3,49 +3,96 @@
 /* Notification Style */
 .notification {
   position: fixed;
-  bottom: 2rem;
+  bottom: 20px;
   left: 50%;
-  transform: translateX(-50%);
-  background: var(--card);
+  transform: translateX(-50%) translateY(100px);
+  background-color: var(--card);
   color: var(--foreground);
-  padding: 1rem 1.5rem;
-  border-radius: 0.5rem;
-  font-size: 0.875rem;
+  padding: 12px 20px;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  z-index: 9999;
+  font-size: 14px;
+  font-weight: 500;
   display: flex;
   align-items: center;
-  gap: 0.75rem;
+  gap: 10px;
   border: 1px solid var(--border);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-  animation: slideUpFade 0.3s ease-out;
-  z-index: 1000;
-  opacity: 1;
-  transition: all 0.3s ease-out;
+  opacity: 0;
+  transition: all 0.3s ease;
+  max-width: 90%;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
-[data-theme="dark"] .notification {
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+.notification.show {
+  transform: translateX(-50%) translateY(0);
+  opacity: 1;
+}
+
+.notification::before {
+  content: "";
+  display: inline-block;
+  width: 16px;
+  height: 16px;
+  background-position: center;
+  background-repeat: no-repeat;
+  background-size: contain;
 }
 
 .notification.success {
-  border-left: 4px solid hsl(142.1, 76.2%, 36.3%);
+  background-color: var(--success-light);
+  color: var(--success);
+  border-color: var(--success-border);
+}
+
+.notification.success::before {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%2310b981' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M20 6 9 17l-5-5'/%3E%3C/svg%3E");
 }
 
 .notification.error {
-  border-left: 4px solid hsl(0, 84.2%, 60.2%);
-  cursor: pointer;
+  background-color: var(--danger-light);
+  color: var(--danger);
+  border-color: var(--danger-border);
 }
 
-.notification.error:hover {
-  background: var(--hover);
+.notification.error::before {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23ef4444' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='12' cy='12' r='10'/%3E%3Cline x1='12' y1='8' x2='12' y2='12'/%3E%3Cline x1='12' y1='16' x2='12.01' y2='16'/%3E%3C/svg%3E");
 }
 
-.notification.error .copy-icon {
-  opacity: 0.7;
-  transition: opacity 0.2s ease;
+.notification.info {
+  background-color: var(--info-light);
+  color: var(--info);
+  border-color: var(--info-border);
 }
 
-.notification.error:hover .copy-icon {
-  opacity: 1;
+.notification.info::before {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%230ea5e9' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='12' cy='12' r='10'/%3E%3Cline x1='12' y1='16' x2='12' y2='12'/%3E%3Cline x1='12' y1='8' x2='12.01' y2='8'/%3E%3C/svg%3E");
+}
+
+.notification.warning {
+  background-color: var(--warning-light);
+  color: var(--warning);
+  border-color: var(--warning-border);
+}
+
+.notification.warning::before {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23f59e0b' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z'/%3E%3Cpath d='M12 9v4'/%3E%3Cpath d='M12 17h.01'/%3E%3C/svg%3E");
+}
+
+/* Dark theme adjustments */
+[data-theme="dark"] .notification {
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+}
+
+/* Mobile adjustments */
+@media (max-width: 768px) {
+  .notification {
+    padding: 10px 16px;
+    font-size: 13px;
+    max-width: 85%;
+  }
 }
 
 /* Copy Success Notification */

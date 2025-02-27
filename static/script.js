@@ -105,26 +105,66 @@ function toggleRainbow(event) {
     if (!event.shiftKey) return;
     
     const title = document.querySelector('.title');
+    const titleApi = document.querySelector('.title-api');
+    const titleKey = document.querySelector('.title-key');
+    const titleManager = document.querySelector('.title-manager');
     const projectBadge = document.getElementById('selected-project-name');
     
-    // Toggle the rainbow animation on the title element
-    title.classList.toggle('rainbow');
+    // Check current state
+    const titleRainbow = title.classList.contains('rainbow');
+    const apiRainbow = titleApi.classList.contains('rainbow');
+    const keyRainbow = titleKey.classList.contains('rainbow');
+    const managerRainbow = titleManager.classList.contains('rainbow');
+    const projectRainbow = projectBadge.classList.contains('rainbow');
     
-    if (title.classList.contains('rainbow')) {
+    // If any individual element has rainbow, remove all rainbows
+    if (apiRainbow || keyRainbow || managerRainbow || projectRainbow) {
+        // Remove all rainbow effects
+        title.classList.remove('rainbow');
+        titleApi.classList.remove('rainbow');
+        titleKey.classList.remove('rainbow');
+        titleManager.classList.remove('rainbow');
+        projectBadge.classList.remove('rainbow');
+        
+        // Update localStorage
+        localStorage.setItem('titleRainbow', 'false');
+        localStorage.setItem('apiRainbow', 'false');
+        localStorage.setItem('keyRainbow', 'false');
+        localStorage.setItem('managerRainbow', 'false');
+        localStorage.setItem('projectRainbow', 'false');
+        
+        // Reset colors
+        titleApi.style.color = '';
+        titleKey.style.color = '';
+        titleManager.style.color = '';
+        projectBadge.style.color = '';
+        
+        // Clear stored colors
+        localStorage.removeItem('titleColor_api');
+        localStorage.removeItem('titleColor_key');
+        localStorage.removeItem('titleColor_manager');
+        localStorage.removeItem('projectColor');
+    } else if (titleRainbow) {
+        // If title has rainbow, remove it
+        title.classList.remove('rainbow');
+        localStorage.setItem('titleRainbow', 'false');
+    } else {
+        // If no rainbows, add rainbow to title
+        title.classList.add('rainbow');
+        localStorage.setItem('titleRainbow', 'true');
+        
         // Remove any inline custom colors from title spans
         document.querySelectorAll('.title span').forEach(span => {
             span.style.color = '';
             localStorage.removeItem(`titleColor_${span.className.split('-')[1]}`);
         });
-        // Also clear inline color on the project badge and add rainbow animation
-        projectBadge.style.color = '';
+        
+        // Also add rainbow to project badge
         projectBadge.classList.add('rainbow');
-    } else {
-        projectBadge.classList.remove('rainbow');
+        localStorage.setItem('projectRainbow', 'true');
+        projectBadge.style.color = '';
+        localStorage.removeItem('projectColor');
     }
-    
-    // Save the current rainbow state
-    localStorage.setItem('titleRainbow', title.classList.contains('rainbow'));
 }
 
 // Add these new functions for key context menu
@@ -1179,26 +1219,64 @@ document.addEventListener('DOMContentLoaded', async () => {
     console.log('Page loaded, initializing...');
     await fetchProjects();
     
-    // Restore rainbow state
-    const wasRainbow = localStorage.getItem('titleRainbow') === 'true';
+    // Restore rainbow effects and colors
     const title = document.querySelector('.title');
-    const projectBadge = document.getElementById('selected-project-name'); // NEW: get project badge
-    if (wasRainbow) {
+    const titleApi = document.querySelector('.title-api');
+    const titleKey = document.querySelector('.title-key');
+    const titleManager = document.querySelector('.title-manager');
+    const projectBadge = document.getElementById('selected-project-name');
+    
+    const titleRainbow = localStorage.getItem('titleRainbow') === 'true';
+    const apiRainbow = localStorage.getItem('apiRainbow') === 'true';
+    const keyRainbow = localStorage.getItem('keyRainbow') === 'true';
+    const managerRainbow = localStorage.getItem('managerRainbow') === 'true';
+    const projectRainbow = localStorage.getItem('projectRainbow') === 'true';
+    
+    // Apply rainbow effects
+    if (titleRainbow) {
+        // Apply rainbow to entire title
         title.classList.add('rainbow');
-        projectBadge.classList.add('rainbow'); // NEW: persist rainbow on project badge
-        // Clear any saved custom colors
-        document.querySelectorAll('.title span').forEach(span => {
-            span.style.color = '';
-            localStorage.removeItem(`titleColor_${span.className.split('-')[1]}`);
-        });
+        // Clear individual rainbow effects
+        titleApi.classList.remove('rainbow');
+        titleKey.classList.remove('rainbow');
+        titleManager.classList.remove('rainbow');
     } else {
-        // Restore individual word colors if rainbow was not active
-        ['api', 'key', 'manager'].forEach(word => {
-            const savedColor = localStorage.getItem(`titleColor_${word}`);
-            if (savedColor) {
-                document.querySelector(`.title-${word}`).style.color = savedColor;
-            }
-        });
+        // Apply individual rainbow effects
+        if (apiRainbow) titleApi.classList.add('rainbow');
+        if (keyRainbow) titleKey.classList.add('rainbow');
+        if (managerRainbow) titleManager.classList.add('rainbow');
+        
+        // Apply individual colors if not rainbow
+        if (!apiRainbow) {
+            const apiColor = localStorage.getItem('titleColor_api');
+            if (apiColor) titleApi.style.color = apiColor;
+        }
+        
+        if (!keyRainbow) {
+            const keyColor = localStorage.getItem('titleColor_key');
+            if (keyColor) titleKey.style.color = keyColor;
+        }
+        
+        if (!managerRainbow) {
+            const managerColor = localStorage.getItem('titleColor_manager');
+            if (managerColor) titleManager.style.color = managerColor;
+        }
+    }
+    
+    // Apply project badge effects
+    if (projectRainbow) {
+        projectBadge.classList.add('rainbow');
+    } else {
+        const projectColor = localStorage.getItem('projectColor');
+        if (projectColor) projectBadge.style.color = projectColor;
+    }
+    
+    // Ensure the title has the expected structure for rainbow animation
+    if (title && !title.innerHTML.includes('title-api')) {
+        title.innerHTML = 
+            '<span class="title-api">API</span> ' +
+            '<span class="title-key key-text" onclick="toggleRainbow(event)">Key</span> ' +
+            '<span class="title-manager">Manager</span>';
     }
     
     // Restore selected project from localStorage
@@ -1217,22 +1295,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
     
     await fetchKeys();
-    
-    // NEW: Ensure the title has the expected structure for rainbow animation
-    if (title && !title.innerHTML.includes('title-api')) {
-        title.innerHTML = 
-            '<span class="title-api">API</span> ' +
-            '<span class="title-key key-text" onclick="toggleRainbow(event)">Key</span> ' +
-            '<span class="title-manager">Manager</span>';
-    }
-    
-    // Existing restoration of custom colors
-    ['api', 'key', 'manager'].forEach(word => {
-        const savedColor = localStorage.getItem(`titleColor_${word}`);
-        if (savedColor) {
-            document.querySelector(`.title-${word}`).style.color = savedColor;
-        }
-    });
 });
 
 async function handleEnvFileUpload(event) {
@@ -1842,23 +1904,12 @@ function resetTitleColor() {
     document.getElementById('rgb-b').value = rgb.b;
 
     // Update preview text colors
-    document.querySelector('.preview-text').classList.remove('rainbow');
     document.querySelectorAll('.preview-text span').forEach(span => {
         span.style.color = defaultColor;
     });
     
-    // Reset color option to solid
-    selectedColorOption = 'solid';
-    document.getElementById('solid-color-btn').classList.add('active');
-    document.getElementById('rainbow-btn').classList.remove('active');
-    document.getElementById('color-picker-controls').style.display = 'block';
-    document.getElementById('hex-color').parentElement.parentElement.style.display = 'block';
-    document.getElementById('rgb-r').parentElement.parentElement.parentElement.style.display = 'block';
-    
-    // Also reset project badge color to the default
-    const projectBadge = document.getElementById('selected-project-name');
-    projectBadge.style.color = '';
-    projectBadge.classList.remove('rainbow');
+    // >>> NEW: Also reset project badge color to the default
+    document.getElementById('selected-project-name').style.color = defaultColor;
 }
 
 // Add event listeners for color inputs
