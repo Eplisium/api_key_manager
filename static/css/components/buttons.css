@@ -1,15 +1,19 @@
 /* Button Component Styles */
 
 .btn {
-  padding: 0.5rem 1rem;
-  border-radius: 0.375rem;
-  font-weight: 500;
+  padding: 0.625rem 1.25rem;
+  border-radius: 0.5rem;
+  font-weight: 600;
   cursor: pointer;
-  transition: all 0.2s;
+  transition: all 0.2s ease;
   border: 1px solid var(--border);
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   gap: 0.5rem;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+  font-size: 0.9375rem;
+  line-height: 1.5;
 }
 
 .btn svg {
@@ -21,10 +25,18 @@
   background-color: var(--primary);
   color: var(--primary-foreground);
   border: 1px solid var(--primary);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
 .btn-primary:hover {
   opacity: 0.9;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.btn-primary:active {
+  transform: translateY(0);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
 }
 
 .btn:not(.btn-primary) {
@@ -34,11 +46,19 @@
 
 .btn:not(.btn-primary):hover {
   background-color: var(--hover);
+  transform: translateY(-1px);
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.08);
+}
+
+.btn:not(.btn-primary):active {
+  transform: translateY(0);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
 }
 
 .btn-sm {
-  padding: 0.25rem 0.75rem;
+  padding: 0.375rem 0.875rem;
   font-size: 0.875rem;
+  border-radius: 0.375rem;
 }
 
 /* Button icon styles */
@@ -104,16 +124,21 @@
 
 /* Secondary button */
 .btn-secondary {
-  background-color: var(--secondary-button-bg);
-  color: var(--text-color);
-  border: 1px solid var(--border-color);
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
+  background-color: var(--secondary);
+  color: var(--secondary-foreground);
+  border: 1px solid var(--secondary);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
 }
 
 .btn-secondary:hover {
-  background-color: var(--secondary-button-hover-bg);
+  opacity: 0.9;
+  transform: translateY(-1px);
+  box-shadow: 0 3px 6px rgba(0, 0, 0, 0.1);
+}
+
+.btn-secondary:active {
+  transform: translateY(0);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08);
 }
 
 .btn-secondary svg {
@@ -175,4 +200,93 @@
 
 .btn-download .animate-spin {
   animation: spin 1s linear infinite;
+}
+
+/* Color picker specific buttons */
+.word-select-btn {
+  padding: 0.625rem 0.75rem;
+  border-radius: 0.5rem;
+  border: 1px solid var(--border);
+  background: var(--card);
+  color: var(--muted);
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-align: center;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+
+.word-select-btn:hover {
+  background: var(--hover);
+  color: var(--foreground);
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.08);
+}
+
+.word-select-btn:active {
+  transform: translateY(0);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+
+.word-select-btn.active {
+  background: var(--primary);
+  color: var(--primary-foreground);
+  border-color: var(--primary);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.color-option-btn {
+  padding: 0.625rem 1rem;
+  border-radius: 0.5rem;
+  border: 1px solid var(--border);
+  background: var(--card);
+  color: var(--muted);
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+
+.color-option-btn:hover {
+  background: var(--hover);
+  color: var(--foreground);
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.08);
+}
+
+.color-option-btn:active {
+  transform: translateY(0);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+
+.color-option-btn.active {
+  background: var(--primary);
+  color: var(--primary-foreground);
+  border-color: var(--primary);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+/* Responsive adjustments for buttons */
+@media (max-width: 480px) {
+  .btn {
+    padding: 0.5rem 1rem;
+    font-size: 0.875rem;
+  }
+  
+  .btn-sm {
+    padding: 0.3125rem 0.75rem;
+    font-size: 0.8125rem;
+  }
+  
+  .word-select-btn,
+  .color-option-btn {
+    padding: 0.5rem 0.75rem;
+    font-size: 0.8125rem;
+  }
 } 
