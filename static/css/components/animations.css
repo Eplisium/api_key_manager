@@ -51,6 +51,49 @@
   100% { color: #ff0000; }
 }
 
+@keyframes rainbow-bg {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
 .animate-spin {
   animation: spin 1s linear infinite;
-} 
+}
+
+/* Smooth color transition */
+.color-transition {
+  transition: color 0.3s ease, background-color 0.3s ease, text-shadow 0.3s ease;
+}
+
+/* Prevent rainbow animation from being affected by transitions */
+.rainbow.color-transition {
+  transition: background-color 0.3s ease, text-shadow 0.3s ease;
+  transition-property: background-color, text-shadow;
+}
+
+/* Color change notification */
+.color-change-notification {
+  position: fixed;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--card);
+  color: var(--foreground);
+  padding: 8px 16px;
+  border-radius: 4px;
+  font-size: 14px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  border: 1px solid var(--border);
+  z-index: 9999;
+  opacity: 0.9;
+  animation: slideUpFade 0.3s ease forwards;
+}
+
+[data-theme="dark"] .color-change-notification {
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+.color-change-notification.fade-out {
+  animation: fadeOut 0.5s ease forwards;
+}

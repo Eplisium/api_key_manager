@@ -140,24 +140,23 @@ export function initializeSidebar() {
 export function toggleRainbow(event) {
     console.log('toggleRainbow called with event type:', event.type, 'shift key:', event.shiftKey);
     
-    // For left-click, only proceed if the shift key is pressed
-    if (event.type === 'contextmenu') {
-        // This should not be called for contextmenu events anymore
-        // We're handling contextmenu separately in initializeRainbowEffects
-        return;
-    }
-    
-    // For left-click, only proceed if the shift key is pressed
+    // Only proceed if the shift key is pressed
     if (!event.shiftKey) {
         console.log('Shift key not pressed, returning');
         return;
     }
     
+    // Get all relevant elements
     const title = document.querySelector('.title');
     const titleApi = document.querySelector('.title-api');
     const titleKey = document.querySelector('.title-key');
     const titleManager = document.querySelector('.title-manager');
     const projectBadge = document.getElementById('selected-project-name');
+    
+    if (!title || !titleApi || !titleKey || !titleManager || !projectBadge) {
+        console.error('Required elements not found for rainbow effect');
+        return;
+    }
     
     // Check current state
     const titleRainbow = title.classList.contains('rainbow');
@@ -165,6 +164,10 @@ export function toggleRainbow(event) {
     const keyRainbow = titleKey.classList.contains('rainbow');
     const managerRainbow = titleManager.classList.contains('rainbow');
     const projectRainbow = projectBadge.classList.contains('rainbow');
+    
+    // Add a transition class for smooth color changes
+    const elements = [title, titleApi, titleKey, titleManager, projectBadge];
+    elements.forEach(el => el.classList.add('color-transition'));
     
     // If any individual element has rainbow, remove all rainbows
     if (apiRainbow || keyRainbow || managerRainbow || projectRainbow) {
@@ -214,6 +217,23 @@ export function toggleRainbow(event) {
         projectBadge.style.color = '';
         localStorage.removeItem('projectColor');
     }
+    
+    // Remove transition class after animation completes
+    setTimeout(() => {
+        elements.forEach(el => el.classList.remove('color-transition'));
+    }, 300);
+    
+    // Show a subtle notification
+    const notification = document.createElement('div');
+    notification.className = 'color-change-notification';
+    notification.textContent = titleRainbow ? 'Rainbow effect disabled' : 'Rainbow effect enabled';
+    document.body.appendChild(notification);
+    
+    // Fade out and remove notification
+    setTimeout(() => {
+        notification.classList.add('fade-out');
+        setTimeout(() => notification.remove(), 500);
+    }, 1500);
 }
 
 /**
@@ -250,20 +270,15 @@ export function initializeRainbowEffects() {
             // Create the key wrapper
             const keyWrapper = document.createElement('span');
             keyWrapper.className = 'title-key-wrapper';
-            keyWrapper.setAttribute('oncontextmenu', 'return false;');
             
             // Create overlay for the key
             const keyOverlay = document.createElement('div');
             keyOverlay.className = 'key-overlay';
-            keyOverlay.setAttribute('oncontextmenu', 'return false;');
-            keyOverlay.setAttribute('onmousedown', 'handleKeyMouseDown(event)');
-            keyOverlay.setAttribute('onclick', 'if(event.button === 2) { return false; }');
             
             // Create the key span
             const keySpan = document.createElement('span');
             keySpan.className = 'title-key';
             keySpan.setAttribute('data-text', 'Key');
-            keySpan.setAttribute('oncontextmenu', 'return false;');
             keySpan.textContent = 'Key';
             
             // Assemble the structure
@@ -281,13 +296,27 @@ export function initializeRainbowEffects() {
         }
     }
     
-    // Apply rainbow effects
+    // Clear any existing rainbow effects first
     const title = document.querySelector('.title');
     const titleApi = document.querySelector('.title-api');
     const titleKey = document.querySelector('.title-key');
     const titleManager = document.querySelector('.title-manager');
     const projectBadge = document.getElementById('selected-project-name');
     
+    // Remove all rainbow classes and reset colors
+    title?.classList.remove('rainbow');
+    titleApi?.classList.remove('rainbow');
+    titleKey?.classList.remove('rainbow');
+    titleManager?.classList.remove('rainbow');
+    projectBadge?.classList.remove('rainbow');
+    
+    // Reset inline colors
+    titleApi.style.color = '';
+    titleKey.style.color = '';
+    titleManager.style.color = '';
+    projectBadge.style.color = '';
+    
+    // Get saved state
     const titleRainbow = localStorage.getItem('titleRainbow') === 'true';
     const apiRainbow = localStorage.getItem('apiRainbow') === 'true';
     const keyRainbow = localStorage.getItem('keyRainbow') === 'true';
@@ -298,10 +327,6 @@ export function initializeRainbowEffects() {
     if (titleRainbow) {
         // Apply rainbow to entire title
         title.classList.add('rainbow');
-        // Clear individual rainbow effects
-        if (titleApi) titleApi.classList.remove('rainbow');
-        if (titleKey) titleKey.classList.remove('rainbow');
-        if (titleManager) titleManager.classList.remove('rainbow');
     } else {
         // Apply individual rainbow effects
         if (titleApi && apiRainbow) titleApi.classList.add('rainbow');
@@ -327,12 +352,17 @@ export function initializeRainbowEffects() {
     
     // Apply project badge effects
     if (projectBadge) {
-        if (projectRainbow) {
+        if (projectRainbow || titleRainbow) {
             projectBadge.classList.add('rainbow');
         } else {
             const projectColor = localStorage.getItem('projectColor');
             if (projectColor) projectBadge.style.color = projectColor;
         }
+    }
+    
+    // Ensure the title-key doesn't have rainbow class if title has rainbow
+    if (titleRainbow && titleKey) {
+        titleKey.classList.remove('rainbow');
     }
 }
 

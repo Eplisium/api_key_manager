@@ -480,53 +480,142 @@ export function showColorPickerModal(event) {
     console.log('showColorPickerModal called', event);
     if (event) {
         event.preventDefault();
+        event.stopPropagation();
+        event.stopImmediatePropagation();
     }
-    const modal = document.getElementById('color-picker-modal');
-    console.log('Color picker modal element:', modal);
-    modal.classList.add('show');
     
-    // Initialize with current color or default
-    const currentColor = localStorage.getItem('customTitleColor') || '#000000';
-    initializeColorPicker(currentColor);
+    // Add a small delay to ensure the context menu is fully prevented
+    setTimeout(() => {
+        const modal = document.getElementById('color-picker-modal');
+        if (!modal) {
+            console.error('Color picker modal element not found');
+            return;
+        }
+        
+        // Add a fade-in class for smooth appearance
+        modal.classList.add('fade-in');
+        modal.classList.add('show');
+        
+        // Get current colors from localStorage or elements
+        let currentColor;
+        const title = document.querySelector('.title');
+        const titleKey = document.querySelector('.title-key');
+        
+        // Determine which color to use based on current state
+        if (title.classList.contains('rainbow')) {
+            currentColor = '#ff0000'; // Default rainbow start color
+        } else if (titleKey && titleKey.style.color) {
+            // Get color from the key element if it has a custom color
+            try {
+                const computedColor = getComputedStyle(titleKey).color;
+                const rgbValues = computedColor.match(/\d+/g);
+                if (rgbValues && rgbValues.length === 3) {
+                    currentColor = rgbToHex(
+                        parseInt(rgbValues[0]),
+                        parseInt(rgbValues[1]),
+                        parseInt(rgbValues[2])
+                    );
+                } else {
+                    // Fallback to default color
+                    currentColor = document.documentElement.getAttribute('data-theme') === 'dark' ? '#FFFFFF' : '#000000';
+                }
+            } catch (e) {
+                console.error('Error parsing color:', e);
+                currentColor = document.documentElement.getAttribute('data-theme') === 'dark' ? '#FFFFFF' : '#000000';
+            }
+        } else {
+            // Use stored color or default based on theme
+            currentColor = localStorage.getItem('customTitleColor') || 
+                (document.documentElement.getAttribute('data-theme') === 'dark' ? '#FFFFFF' : '#000000');
+        }
+        
+        // Initialize color picker with the determined color
+        initializeColorPicker(currentColor);
+        
+        // Reset word selection to 'all'
+        window.selectedWord = 'all';
+        document.querySelectorAll('.word-select-btn').forEach(btn => {
+            btn.classList.toggle('active', btn.dataset.word === 'all');
+        });
+        
+        // Check if rainbow is active
+        const isRainbow = localStorage.getItem('titleRainbow') === 'true';
+        console.log('Is rainbow active:', isRainbow);
+        
+        if (isRainbow) {
+            window.selectedColorOption = 'rainbow';
+            const rainbowBtn = document.getElementById('rainbow-btn');
+            const solidColorBtn = document.getElementById('solid-color-btn');
+            
+            if (rainbowBtn) rainbowBtn.classList.add('active');
+            if (solidColorBtn) solidColorBtn.classList.remove('active');
+            
+            const colorPickerControls = document.getElementById('color-picker-controls');
+            const hexColorContainer = document.getElementById('hex-color')?.parentElement?.parentElement;
+            const rgbContainer = document.getElementById('rgb-r')?.parentElement?.parentElement?.parentElement;
+            
+            if (colorPickerControls) colorPickerControls.style.display = 'none';
+            if (hexColorContainer) hexColorContainer.style.display = 'none';
+            if (rgbContainer) rgbContainer.style.display = 'none';
+            
+            // Update preview to show rainbow
+            const previewText = document.querySelector('.preview-text');
+            if (previewText) {
+                previewText.classList.add('rainbow');
+                previewText.classList.remove('color-transition'); // Remove transition to avoid glitches
+                
+                // Force a reflow to ensure the rainbow animation starts fresh
+                void previewText.offsetWidth;
+                
+                // Add transition back after a small delay
+                setTimeout(() => {
+                    previewText.classList.add('color-transition');
+                }, 50);
+            }
+        } else {
+            window.selectedColorOption = 'solid';
+            const rainbowBtn = document.getElementById('rainbow-btn');
+            const solidColorBtn = document.getElementById('solid-color-btn');
+            
+            if (solidColorBtn) solidColorBtn.classList.add('active');
+            if (rainbowBtn) rainbowBtn.classList.remove('active');
+            
+            const colorPickerControls = document.getElementById('color-picker-controls');
+            const hexColorContainer = document.getElementById('hex-color')?.parentElement?.parentElement;
+            const rgbContainer = document.getElementById('rgb-r')?.parentElement?.parentElement?.parentElement;
+            
+            if (colorPickerControls) colorPickerControls.style.display = 'block';
+            if (hexColorContainer) hexColorContainer.style.display = 'block';
+            if (rgbContainer) rgbContainer.style.display = 'block';
+            
+            // Update preview to show solid color
+            const previewText = document.querySelector('.preview-text');
+            if (previewText) {
+                previewText.classList.remove('rainbow');
+            }
+        }
+        
+        // Set initial preview background based on current theme
+        const currentTheme = document.documentElement.getAttribute('data-theme');
+        const previewBg = document.getElementById('preview-background');
+        if (previewBg) {
+            previewBg.value = currentTheme || 'light';
+            updatePreviewBackground();
+        }
+        
+        // Focus on the color wheel for immediate interaction
+        setTimeout(() => {
+            document.getElementById('color-wheel')?.focus();
+        }, 100);
+    }, 10);
+}
 
-    // Reset word selection to 'all'
-    window.selectedWord = 'all';
-    document.querySelectorAll('.word-select-btn').forEach(btn => {
-        btn.classList.toggle('active', btn.dataset.word === 'all');
-    });
-    
-    // Check if rainbow is active
-    const isRainbow = localStorage.getItem('titleRainbow') === 'true';
-    console.log('Is rainbow active:', isRainbow);
-    if (isRainbow) {
-        window.selectedColorOption = 'rainbow';
-        document.getElementById('rainbow-btn').classList.add('active');
-        document.getElementById('solid-color-btn').classList.remove('active');
-        document.getElementById('color-picker-controls').style.display = 'none';
-        document.getElementById('hex-color').parentElement.parentElement.style.display = 'none';
-        document.getElementById('rgb-r').parentElement.parentElement.parentElement.style.display = 'none';
-        
-        // Update preview to show rainbow
-        const previewText = document.querySelector('.preview-text');
-        previewText.classList.add('rainbow');
-    } else {
-        window.selectedColorOption = 'solid';
-        document.getElementById('solid-color-btn').classList.add('active');
-        document.getElementById('rainbow-btn').classList.remove('active');
-        document.getElementById('color-picker-controls').style.display = 'block';
-        document.getElementById('hex-color').parentElement.parentElement.style.display = 'block';
-        document.getElementById('rgb-r').parentElement.parentElement.parentElement.style.display = 'block';
-        
-        // Update preview to show solid color
-        const previewText = document.querySelector('.preview-text');
-        previewText.classList.remove('rainbow');
-    }
-    
-    // Set initial preview background based on current theme
-    const currentTheme = document.documentElement.getAttribute('data-theme');
-    const previewBg = document.getElementById('preview-background');
-    previewBg.value = currentTheme || 'light';
-    updatePreviewBackground();
+// Helper function to convert RGB to hex
+function rgbToHex(r, g, b) {
+    return '#' + [r, g, b].map(x => {
+        const hex = x.toString(16);
+        return hex.length === 1 ? '0' + hex : hex;
+    }).join('');
 }
 
 /**
@@ -598,41 +687,77 @@ export function updatePreviewBackground() {
  */
 export function applyCustomColor() {
     const title = document.querySelector('.title');
+    const titleApi = document.querySelector('.title-api');
+    const titleKey = document.querySelector('.title-key');
+    const titleManager = document.querySelector('.title-manager');
     const projectBadge = document.getElementById('selected-project-name');
+    
+    // First, clear all existing rainbow classes and inline styles
+    title.classList.remove('rainbow');
+    titleApi.classList.remove('rainbow');
+    titleKey.classList.remove('rainbow');
+    titleManager.classList.remove('rainbow');
+    projectBadge.classList.remove('rainbow');
+    
+    // Reset inline colors
+    titleApi.style.color = '';
+    titleKey.style.color = '';
+    titleManager.style.color = '';
+    projectBadge.style.color = '';
+    
+    // Clear localStorage values
+    localStorage.setItem('titleRainbow', 'false');
+    localStorage.setItem('apiRainbow', 'false');
+    localStorage.setItem('keyRainbow', 'false');
+    localStorage.setItem('managerRainbow', 'false');
+    localStorage.setItem('projectRainbow', 'false');
     
     if (window.selectedColorOption === 'rainbow') {
         // Apply rainbow effect
         title.classList.add('rainbow');
         projectBadge.classList.add('rainbow');
         localStorage.setItem('titleRainbow', 'true');
+        localStorage.setItem('projectRainbow', 'true');
         
-        // Clear any custom colors
-        document.querySelectorAll('.title span').forEach(span => {
-            span.style.color = '';
-            localStorage.removeItem(`titleColor_${span.className.split('-')[1]}`);
-        });
-        projectBadge.style.color = '';
+        // Force a reflow to ensure the rainbow animation starts fresh
+        void title.offsetWidth;
+        void projectBadge.offsetWidth;
+        
+        // Show a notification
+        showNotification('Rainbow effect applied', 'success');
     } else {
         // Apply solid color
         const color = document.getElementById('color-wheel').value;
         
-        // Remove rainbow effect
-        title.classList.remove('rainbow');
-        projectBadge.classList.remove('rainbow');
-        localStorage.setItem('titleRainbow', 'false');
-        
         if (window.selectedWord === 'all') {
-            document.querySelectorAll('.title span').forEach(span => {
-                span.style.color = color;
-                localStorage.setItem(`titleColor_${span.className.split('-')[1]}`, color);
-            });
+            // Apply to all spans
+            titleApi.style.color = color;
+            titleKey.style.color = color;
+            titleManager.style.color = color;
+            projectBadge.style.color = color;
+            
+            // Save to localStorage
+            localStorage.setItem('titleColor_api', color);
+            localStorage.setItem('titleColor_key', color);
+            localStorage.setItem('titleColor_manager', color);
+            localStorage.setItem('projectColor', color);
         } else {
+            // Apply to specific element
             const targetSpan = document.querySelector(`.title-${window.selectedWord}`);
-            targetSpan.style.color = color;
-            localStorage.setItem(`titleColor_${window.selectedWord}`, color);
+            if (targetSpan) {
+                targetSpan.style.color = color;
+                localStorage.setItem(`titleColor_${window.selectedWord}`, color);
+            }
+            
+            // If applying to project, update project badge
+            if (window.selectedWord === 'project' && projectBadge) {
+                projectBadge.style.color = color;
+                localStorage.setItem('projectColor', color);
+            }
         }
-        // Sync selected project badge color with applied color
-        projectBadge.style.color = color;
+        
+        // Show a notification
+        showNotification('Color applied successfully', 'success');
     }
     
     hideColorPickerModal();

@@ -194,32 +194,114 @@ document.addEventListener('DOMContentLoaded', async () => {
     window.selectedWord = 'all';
     window.selectedColorOption = 'solid';
     
-    // Handle mouse events on the key overlay element
-    window.handleKeyMouseDown = function(event) {
-        console.log('Key mouse down event:', event.button, event.shiftKey);
+    // Comprehensive event handling for the title key and overlay
+    const setupTitleKeyEvents = () => {
+        // Get all relevant elements
+        const titleKeyElement = document.querySelector('.title-key');
+        const keyOverlay = document.querySelector('.key-overlay');
+        const titleKeyWrapper = document.querySelector('.title-key-wrapper');
+        const title = document.querySelector('.title');
         
-        // Always prevent default event behavior to avoid context menu
-        event.preventDefault();
-        event.stopPropagation();
-        
-        // Handle shift+right-click (open color picker)
-        if (event.shiftKey && event.button === 2) {
-            console.log('Shift+right-click detected on key, opening color picker');
-            setTimeout(() => {
-                showColorPickerModal(event);
-            }, 10);
-            return false;
+        if (!titleKeyElement || !keyOverlay || !titleKeyWrapper) {
+            console.error('Title key elements not found');
+            return;
         }
         
-        // Handle shift+left-click (toggle rainbow effect)
-        if (event.shiftKey && event.button === 0) {
-            console.log('Shift+left-click detected on key, toggling rainbow');
-            toggleRainbow(event);
-            return false;
-        }
+        // Remove any existing inline handlers
+        titleKeyWrapper.removeAttribute('oncontextmenu');
+        titleKeyElement.removeAttribute('oncontextmenu');
+        keyOverlay.removeAttribute('oncontextmenu');
+        keyOverlay.removeAttribute('onclick');
+        keyOverlay.removeAttribute('onmousedown');
         
-        return false;
+        // Create a tooltip element for the title key
+        const tooltip = document.createElement('div');
+        tooltip.className = 'title-key-tooltip';
+        tooltip.textContent = 'Shift + Click';
+        tooltip.style.display = 'none';
+        titleKeyWrapper.appendChild(tooltip);
+        
+        // Apply CSS to prevent context menu
+        [titleKeyElement, keyOverlay, titleKeyWrapper, title].forEach(el => {
+            if (el) {
+                el.style.webkitUserSelect = 'none';
+                el.style.userSelect = 'none';
+                el.style.webkitTouchCallout = 'none';
+            }
+        });
+        
+        // Super aggressive context menu prevention
+        const preventContextMenu = (e) => {
+            // Check if the event target is any of our protected elements or their children
+            const isProtectedElement = e.target === titleKeyElement || 
+                                     e.target === keyOverlay ||
+                                     e.target === titleKeyWrapper ||
+                                     e.target === title ||
+                                     titleKeyElement?.contains(e.target) ||
+                                     keyOverlay?.contains(e.target) ||
+                                     titleKeyWrapper?.contains(e.target) ||
+                                     title?.contains(e.target);
+            
+            if (isProtectedElement) {
+                e.preventDefault();
+                e.stopPropagation();
+                e.stopImmediatePropagation();
+                
+                // Show color picker on shift+right-click
+                if (e.shiftKey && (e.button === 2 || e.type === 'contextmenu')) {
+                    setTimeout(() => {
+                        showColorPickerModal(e);
+                    }, 0);
+                }
+                
+                // Toggle rainbow on shift+left-click
+                if (e.shiftKey && e.button === 0 && e.type === 'mousedown') {
+                    toggleRainbow(e);
+                }
+                
+                return false;
+            }
+        };
+        
+        // Handle hover events for tooltip
+        const handleHover = (event) => {
+            const isHovering = event.type === 'mouseenter';
+            tooltip.style.display = isHovering ? 'block' : 'none';
+        };
+        
+        // Add event listeners directly to the elements
+        [titleKeyElement, keyOverlay, titleKeyWrapper, title].forEach(el => {
+            if (el) {
+                ['contextmenu', 'mousedown', 'mouseup', 'click'].forEach(eventType => {
+                    el.addEventListener(eventType, preventContextMenu, true);
+                });
+            }
+        });
+        
+        // Add global document listeners as a fallback
+        ['contextmenu', 'mousedown', 'mouseup', 'click'].forEach(eventType => {
+            document.addEventListener(eventType, preventContextMenu, true);
+        });
+        
+        // Add hover events for tooltip
+        titleKeyElement.addEventListener('mouseenter', handleHover);
+        titleKeyElement.addEventListener('mouseleave', handleHover);
+        keyOverlay.addEventListener('mouseenter', handleHover);
+        keyOverlay.addEventListener('mouseleave', handleHover);
+        
+        // Add a direct event listener to the window object
+        window.addEventListener('contextmenu', preventContextMenu, true);
+        
+        // Override the oncontextmenu property of the document
+        document.oncontextmenu = (e) => {
+            if (preventContextMenu(e) === false) {
+                return false;
+            }
+        };
     };
+    
+    // Call the setup function
+    setupTitleKeyEvents();
     
     // Add event listeners for dropdowns
     window.onclick = function(event) {
@@ -233,103 +315,6 @@ document.addEventListener('DOMContentLoaded', async () => {
             }
         }
     };
-    
-    // Add global event listener for right-click on title-key element
-    document.addEventListener('contextmenu', function(event) {
-        console.log('Global contextmenu handler triggered');
-        
-        // Check if the click is on or within the title-key element
-        const titleKeyElement = document.querySelector('.title-key');
-        if (titleKeyElement && (event.target === titleKeyElement || titleKeyElement.contains(event.target))) {
-            console.log('Right-click on title-key element detected');
-            
-            // Always prevent default for right-clicks on title-key
-            event.preventDefault();
-            event.stopPropagation();
-            
-            // Only show color picker if shift key is pressed
-            if (event.shiftKey) {
-                console.log('Shift key is pressed during right-click');
-                setTimeout(() => {
-                    showColorPickerModal(event);
-                }, 10);
-            }
-            return false;
-        }
-        
-        // Check if shift key is pressed for other elements
-        if (event.shiftKey) {
-            console.log('Shift key is pressed during right-click');
-            
-            // Check if the click is on or within the title element
-            const titleElement = document.querySelector('.title');
-            if (titleElement && (event.target === titleElement || titleElement.contains(event.target))) {
-                console.log('Right-click on title element detected with shift key');
-                event.preventDefault();
-                event.stopPropagation();
-                
-                // Call showColorPickerModal directly
-                showColorPickerModal(event);
-                return false;
-            }
-        }
-    }, true); // Use capturing phase to ensure our handler runs first
-    
-    // Simplify with a direct handler using mousedown for better detection
-    const titleElement = document.querySelector('.title');
-    const titleKeyElement = document.querySelector('.title-key');
-    
-    // Add specific event listener for the title-key element
-    if (titleKeyElement) {
-        // Prevent context menu on title-key regardless of shift key
-        titleKeyElement.addEventListener('contextmenu', function(event) {
-            console.log('Direct contextmenu handler on title-key triggered');
-            event.preventDefault();
-            event.stopPropagation();
-            
-            // Only show color picker if shift key is pressed
-            if (event.shiftKey) {
-                setTimeout(() => {
-                    showColorPickerModal(event);
-                }, 10);
-            }
-            return false;
-        }, false);
-        
-        titleKeyElement.addEventListener('mousedown', function(event) {
-            // Right mouse button (button 2)
-            if (event.button === 2) {
-                console.log('mousedown: Right button detected on title-key');
-                event.preventDefault();
-                event.stopPropagation();
-                
-                // Show the color picker if shift key is pressed
-                if (event.shiftKey) {
-                    setTimeout(() => {
-                        showColorPickerModal(event);
-                    }, 10);
-                }
-                return false;
-            }
-        }, true);
-    }
-    
-    if (titleElement) {
-        titleElement.addEventListener('mousedown', function(event) {
-            // Check if it's a right-click (button 2) with shift key pressed
-            if (event.button === 2 && event.shiftKey) {
-                console.log('mousedown: Right button + shift detected on title');
-                event.preventDefault();
-                event.stopPropagation();
-                
-                // Show the color picker
-                setTimeout(() => {
-                    showColorPickerModal(event);
-                }, 10);
-                return false;
-            }
-        }, true);
-    }
     
     // Add event listeners for color picker - directly attach them without nesting in another DOMContentLoaded
     // Word selection buttons
@@ -397,59 +382,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     });
     
     observer.observe(document.body, { childList: true, subtree: true });
-    
-    // Add a final global window-level handler for context menu events
-    window.addEventListener('contextmenu', function(event) {
-        // Check for key-overlay element first
-        if (event.target && (event.target.classList.contains('key-overlay') ||
-            event.target.closest('.key-overlay'))) {
-            console.log('Prevented context menu on key-overlay');
-            event.preventDefault();
-            event.stopPropagation();
-            return false;
-        }
-        
-        // Get the target element and check if it's the title-key or a child of it
-        const titleKeyElement = document.querySelector('.title-key');
-        if (titleKeyElement && (event.target === titleKeyElement || titleKeyElement.contains(event.target))) {
-            console.log('Window-level contextmenu handler prevented default for title-key');
-            event.preventDefault();
-            event.stopPropagation();
-            return false;
-        }
-    }, true);
-    
-    // Add a specific handler to prevent context menu on the overlay
-    document.addEventListener('DOMContentLoaded', function() {
-        const keyOverlay = document.querySelector('.key-overlay');
-        if (keyOverlay) {
-            keyOverlay.addEventListener('contextmenu', function(event) {
-                console.log('Prevented context menu on key-overlay element');
-                event.preventDefault();
-                event.stopPropagation();
-                return false;
-            }, true);
-            
-            // Add handlers for all relevant mouse events
-            ['mousedown', 'mouseup', 'click', 'auxclick', 'pointerdown'].forEach(eventType => {
-                keyOverlay.addEventListener(eventType, function(event) {
-                    if (event.button === 2 || (event.shiftKey && event.button === 2)) {
-                        console.log(`Prevented ${eventType} event with button ${event.button} on key-overlay`);
-                        event.preventDefault();
-                        event.stopPropagation();
-                        
-                        // Trigger color picker on shift+right-click
-                        if (event.shiftKey && event.button === 2 && eventType === 'mousedown') {
-                            colorPickerModal.style.display = 'block';
-                            colorPickerTarget = 'rainbow';
-                        }
-                        
-                        return false;
-                    }
-                }, true);
-            });
-        }
-    });
     
     // Set up color input event listeners
     const setupColorInputEventListeners = () => {

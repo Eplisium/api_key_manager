@@ -17,6 +17,19 @@
   display: flex;
 }
 
+.modal.fade-in {
+  animation: modalFadeIn 0.3s ease forwards;
+}
+
+@keyframes modalFadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
 .modal-content {
   background: var(--background);
   color: var(--foreground);
@@ -860,4 +873,4 @@
 
 [data-theme="dark"] .bulk-notification {
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
-} 
+}
