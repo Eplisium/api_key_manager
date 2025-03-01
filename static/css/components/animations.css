@@ -61,14 +61,38 @@
   animation: spin 1s linear infinite;
 }
 
+/* Title key specific styles */
+.title-key {
+  color: var(--foreground); /* Use theme color instead of fixed blue */
+  transition: color 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Rainbow animation with smoother transitions */
+.rainbow {
+  animation: rainbow 6s linear infinite;
+  animation-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.title-key.rainbow {
+  animation: rainbow 6s linear infinite;
+}
+
+.title.rainbow .title-key {
+  animation: none;
+  color: inherit;
+}
+
 /* Smooth color transition */
 .color-transition {
-  transition: color 0.3s ease, background-color 0.3s ease, text-shadow 0.3s ease;
+  transition: color 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+              background-color 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+              text-shadow 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 /* Prevent rainbow animation from being affected by transitions */
 .rainbow.color-transition {
-  transition: background-color 0.3s ease, text-shadow 0.3s ease;
+  transition: background-color 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+              text-shadow 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   transition-property: background-color, text-shadow;
 }
 

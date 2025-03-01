@@ -117,6 +117,15 @@ export function deleteProjectFromMenu(event) {
  * @param {boolean} isEncrypted - Whether the key is encrypted
  */
 export function showKeyContextMenu(event, keyValue, keyId, isEncrypted) {
+    // Check if the target element is a title key element
+    if (event.target.closest('.title-key-wrapper') || 
+        event.target.closest('.title-key') || 
+        event.target.closest('.key-overlay')) {
+        event.preventDefault();
+        event.stopPropagation();
+        return;
+    }
+    
     event.preventDefault();
     event.stopPropagation();
     
@@ -284,3 +293,14 @@ export async function viewEncryptedKey(keyId) {
         passwordInput.focus();
     }
 }
+
+// Add a global event listener to prevent context menu on title elements
+document.addEventListener('contextmenu', (e) => {
+    if (e.target.closest('.title-key-wrapper') || 
+        e.target.closest('.title-key') || 
+        e.target.closest('.key-overlay')) {
+        e.preventDefault();
+        e.stopPropagation();
+        return false;
+    }
+}, true);

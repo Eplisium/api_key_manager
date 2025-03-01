@@ -240,62 +240,6 @@ export function toggleRainbow(event) {
  * Initialize rainbow effects and colors from localStorage
  */
 export function initializeRainbowEffects() {
-    // Check if title already has rainbow element
-    if (!document.querySelector('.title-key-wrapper')) {
-        // Get the title element
-        const title = document.querySelector('.title');
-        if (!title) return;
-
-        // Find the text "Key" in the title
-        const titleText = title.textContent;
-        const keyIndex = titleText.indexOf('Key');
-        
-        if (keyIndex !== -1) {
-            // Split the text into parts
-            const beforeKey = titleText.substring(0, keyIndex);
-            const afterKey = titleText.substring(keyIndex + 3);
-            
-            // Clear the title
-            title.innerHTML = '';
-            
-            // Add the parts back with the 'Key' part highlighted
-            if (beforeKey) {
-                const apiSpan = document.createElement('span');
-                apiSpan.className = 'title-api';
-                apiSpan.textContent = 'API';
-                title.appendChild(apiSpan);
-                title.appendChild(document.createTextNode(' '));
-            }
-            
-            // Create the key wrapper
-            const keyWrapper = document.createElement('span');
-            keyWrapper.className = 'title-key-wrapper';
-            
-            // Create overlay for the key
-            const keyOverlay = document.createElement('div');
-            keyOverlay.className = 'key-overlay';
-            
-            // Create the key span
-            const keySpan = document.createElement('span');
-            keySpan.className = 'title-key';
-            keySpan.setAttribute('data-text', 'Key');
-            keySpan.textContent = 'Key';
-            
-            // Assemble the structure
-            keyWrapper.appendChild(keyOverlay);
-            keyWrapper.appendChild(keySpan);
-            title.appendChild(keyWrapper);
-            
-            if (afterKey) {
-                title.appendChild(document.createTextNode(' '));
-                const managerSpan = document.createElement('span');
-                managerSpan.className = 'title-manager';
-                managerSpan.textContent = 'Manager';
-                title.appendChild(managerSpan);
-            }
-        }
-    }
-    
     // Clear any existing rainbow effects first
     const title = document.querySelector('.title');
     const titleApi = document.querySelector('.title-api');
@@ -303,18 +247,26 @@ export function initializeRainbowEffects() {
     const titleManager = document.querySelector('.title-manager');
     const projectBadge = document.getElementById('selected-project-name');
     
-    // Remove all rainbow classes and reset colors
-    title?.classList.remove('rainbow');
-    titleApi?.classList.remove('rainbow');
-    titleKey?.classList.remove('rainbow');
-    titleManager?.classList.remove('rainbow');
-    projectBadge?.classList.remove('rainbow');
+    // Check if elements exist
+    if (!title || !titleApi || !titleKey || !titleManager) {
+        console.error('Required elements not found for rainbow initialization');
+        return;
+    }
     
-    // Reset inline colors
-    titleApi.style.color = '';
-    titleKey.style.color = '';
-    titleManager.style.color = '';
-    projectBadge.style.color = '';
+    // Add transition class for smooth color changes
+    const elements = [title, titleApi, titleKey, titleManager];
+    if (projectBadge) elements.push(projectBadge);
+    elements.forEach(el => el.classList.add('color-transition'));
+    
+    // Remove all rainbow classes first
+    title.classList.remove('rainbow');
+    titleApi.classList.remove('rainbow');
+    titleKey.classList.remove('rainbow');
+    titleManager.classList.remove('rainbow');
+    if (projectBadge) projectBadge.classList.remove('rainbow');
+    
+    // Reset colors to theme defaults
+    elements.forEach(el => el.style.removeProperty('color'));
     
     // Get saved state
     const titleRainbow = localStorage.getItem('titleRainbow') === 'true';
@@ -327,43 +279,47 @@ export function initializeRainbowEffects() {
     if (titleRainbow) {
         // Apply rainbow to entire title
         title.classList.add('rainbow');
-    } else {
-        // Apply individual rainbow effects
-        if (titleApi && apiRainbow) titleApi.classList.add('rainbow');
-        if (titleKey && keyRainbow) titleKey.classList.add('rainbow');
-        if (titleManager && managerRainbow) titleManager.classList.add('rainbow');
         
-        // Apply individual colors if not rainbow
-        if (titleApi && !apiRainbow) {
+        if (projectBadge) {
+            projectBadge.classList.add('rainbow');
+        }
+    } else {
+        // Apply individual rainbow effects and colors
+        if (apiRainbow) {
+            titleApi.classList.add('rainbow');
+        } else {
             const apiColor = localStorage.getItem('titleColor_api');
             if (apiColor) titleApi.style.color = apiColor;
         }
         
-        if (titleKey && !keyRainbow) {
+        if (keyRainbow) {
+            titleKey.classList.add('rainbow');
+        } else {
             const keyColor = localStorage.getItem('titleColor_key');
             if (keyColor) titleKey.style.color = keyColor;
         }
         
-        if (titleManager && !managerRainbow) {
+        if (managerRainbow) {
+            titleManager.classList.add('rainbow');
+        } else {
             const managerColor = localStorage.getItem('titleColor_manager');
             if (managerColor) titleManager.style.color = managerColor;
         }
-    }
-    
-    // Apply project badge effects
-    if (projectBadge) {
-        if (projectRainbow || titleRainbow) {
-            projectBadge.classList.add('rainbow');
-        } else {
-            const projectColor = localStorage.getItem('projectColor');
-            if (projectColor) projectBadge.style.color = projectColor;
+        
+        if (projectBadge) {
+            if (projectRainbow) {
+                projectBadge.classList.add('rainbow');
+            } else {
+                const projectColor = localStorage.getItem('projectColor');
+                if (projectColor) projectBadge.style.color = projectColor;
+            }
         }
     }
     
-    // Ensure the title-key doesn't have rainbow class if title has rainbow
-    if (titleRainbow && titleKey) {
-        titleKey.classList.remove('rainbow');
-    }
+    // Remove transition class after animation completes
+    setTimeout(() => {
+        elements.forEach(el => el.classList.remove('color-transition'));
+    }, 300);
 }
 
 // Color picker utility functions
