@@ -207,11 +207,55 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     };
     
-    // Add event listeners for color picker
-    document.addEventListener('DOMContentLoaded', () => {
-        // Word selection buttons
+    // Add global event listener for right-click on title-key element
+    document.addEventListener('contextmenu', function(event) {
+        console.log('Global contextmenu handler triggered');
+        
+        // Check if shift key is pressed
+        if (event.shiftKey) {
+            console.log('Shift key is pressed during right-click');
+            
+            // Check if the click is on or within the title element
+            const titleElement = document.querySelector('.title');
+            if (titleElement && (event.target === titleElement || titleElement.contains(event.target))) {
+                console.log('Right-click on title element detected with shift key');
+                event.preventDefault();
+                event.stopPropagation();
+                
+                // Call showColorPickerModal directly
+                showColorPickerModal(event);
+                return false;
+            }
+        }
+    }, true); // Use capturing phase to ensure our handler runs first
+    
+    // Simplify with a direct handler using mousedown for better detection
+    const titleElement = document.querySelector('.title');
+    if (titleElement) {
+        titleElement.addEventListener('mousedown', function(event) {
+            // Check if it's a right-click (button 2) with shift key pressed
+            if (event.button === 2 && event.shiftKey) {
+                console.log('mousedown: Right button + shift detected on title');
+                event.preventDefault();
+                event.stopPropagation();
+                
+                // Show the color picker
+                setTimeout(() => {
+                    showColorPickerModal(event);
+                }, 10);
+                return false;
+            }
+        }, true);
+    }
+    
+    // Add event listeners for color picker - directly attach them without nesting in another DOMContentLoaded
+    // Word selection buttons
+    const setupColorPickerEventListeners = () => {
+        console.log('Setting up color picker event listeners');
+        
         document.querySelectorAll('.word-select-btn').forEach(btn => {
             btn.addEventListener('click', () => {
+                console.log('Word select button clicked:', btn.dataset.word);
                 document.querySelectorAll('.word-select-btn').forEach(b => b.classList.remove('active'));
                 btn.classList.add('active');
                 window.selectedWord = btn.dataset.word;
@@ -224,6 +268,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         // Color option buttons
         document.querySelectorAll('.color-option-btn').forEach(btn => {
             btn.addEventListener('click', () => {
+                console.log('Color option button clicked:', btn.dataset.option);
                 document.querySelectorAll('.color-option-btn').forEach(b => b.classList.remove('active'));
                 btn.classList.add('active');
                 window.selectedColorOption = btn.dataset.option;
@@ -249,31 +294,76 @@ document.addEventListener('DOMContentLoaded', async () => {
                 }
             });
         });
+        
+        // Preview background selector
+        document.getElementById('preview-background')?.addEventListener('change', updatePreviewBackground);
+    };
+    
+    // Call the setup function directly
+    setupColorPickerEventListeners();
+    
+    // Also set up a mutation observer to handle dynamically loaded color picker elements
+    const observer = new MutationObserver((mutations) => {
+        mutations.forEach((mutation) => {
+            if (mutation.type === 'childList' && 
+                mutation.addedNodes.length && 
+                document.getElementById('color-picker-modal')?.classList.contains('show')) {
+                setupColorPickerEventListeners();
+            }
+        });
     });
     
-    // Add event listeners for color inputs
-    document.getElementById('color-wheel')?.addEventListener('input', (e) => {
-        const color = e.target.value;
-        document.getElementById('hex-color').value = color.substring(1);
-        const rgb = hexToRgb(color);
-        document.getElementById('rgb-r').value = rgb.r;
-        document.getElementById('rgb-g').value = rgb.g;
-        document.getElementById('rgb-b').value = rgb.b;
-        updatePreviewColors();
-    });
-
-    document.getElementById('hex-color')?.addEventListener('input', (e) => {
-        let hex = e.target.value;
-        if (hex.length === 6) {
-            const color = '#' + hex;
-            document.getElementById('color-wheel').value = color;
-            const rgb = hexToRgb(color);
-            document.getElementById('rgb-r').value = rgb.r;
-            document.getElementById('rgb-g').value = rgb.g;
-            document.getElementById('rgb-b').value = rgb.b;
-            updatePreviewColors();
+    observer.observe(document.body, { childList: true, subtree: true });
+    
+    // Set up color input event listeners
+    const setupColorInputEventListeners = () => {
+        console.log('Setting up color input event listeners');
+        
+        // Color wheel input
+        const colorWheel = document.getElementById('color-wheel');
+        if (colorWheel) {
+            colorWheel.addEventListener('input', (e) => {
+                console.log('Color wheel changed:', e.target.value);
+                const color = e.target.value;
+                document.getElementById('hex-color').value = color.substring(1);
+                const rgb = hexToRgb(color);
+                document.getElementById('rgb-r').value = rgb.r;
+                document.getElementById('rgb-g').value = rgb.g;
+                document.getElementById('rgb-b').value = rgb.b;
+                updatePreviewColors();
+            });
         }
-    });
+
+        // Hex input
+        const hexInput = document.getElementById('hex-color');
+        if (hexInput) {
+            hexInput.addEventListener('input', (e) => {
+                let hex = e.target.value;
+                if (hex.length === 6) {
+                    console.log('Hex color changed:', hex);
+                    const color = '#' + hex;
+                    document.getElementById('color-wheel').value = color;
+                    const rgb = hexToRgb(color);
+                    document.getElementById('rgb-r').value = rgb.r;
+                    document.getElementById('rgb-g').value = rgb.g;
+                    document.getElementById('rgb-b').value = rgb.b;
+                    updatePreviewColors();
+                }
+            });
+        }
+        
+        // RGB inputs
+        const rgbR = document.getElementById('rgb-r');
+        const rgbG = document.getElementById('rgb-g');
+        const rgbB = document.getElementById('rgb-b');
+        
+        if (rgbR) rgbR.addEventListener('input', handleRgbInput);
+        if (rgbG) rgbG.addEventListener('input', handleRgbInput);
+        if (rgbB) rgbB.addEventListener('input', handleRgbInput);
+    };
+    
+    // Call the setup function directly
+    setupColorInputEventListeners();
     
     // Helper function for color picker
     function hexToRgb(hex) {
@@ -286,10 +376,11 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
     
     function handleRgbInput() {
-        const r = document.getElementById('rgb-r').value;
-        const g = document.getElementById('rgb-g').value;
-        const b = document.getElementById('rgb-b').value;
+        const r = document.getElementById('rgb-r')?.value;
+        const g = document.getElementById('rgb-g')?.value;
+        const b = document.getElementById('rgb-b')?.value;
         if (r && g && b) {
+            console.log('RGB values changed:', r, g, b);
             const color = rgbToHex(Number(r), Number(g), Number(b));
             document.getElementById('color-wheel').value = color;
             document.getElementById('hex-color').value = color.substring(1);
@@ -303,18 +394,6 @@ document.addEventListener('DOMContentLoaded', async () => {
             return hex.length === 1 ? '0' + hex : hex;
         }).join('');
     }
-    
-    document.getElementById('rgb-r')?.addEventListener('input', handleRgbInput);
-    document.getElementById('rgb-g')?.addEventListener('input', handleRgbInput);
-    document.getElementById('rgb-b')?.addEventListener('input', handleRgbInput);
-    
-    // Add right-click handler for the title
-    document.querySelector('.title')?.addEventListener('contextmenu', (event) => {
-        if (event.shiftKey) {
-            event.preventDefault();
-            showColorPickerModal(event);
-        }
-    });
     
     // Add event listener for theme toggle button
     document.getElementById('theme-toggle')?.addEventListener('click', toggleTheme);

@@ -477,10 +477,12 @@ export function hideClearKeysModal() {
  * @param {Event} event - The click event
  */
 export function showColorPickerModal(event) {
+    console.log('showColorPickerModal called', event);
     if (event) {
         event.preventDefault();
     }
     const modal = document.getElementById('color-picker-modal');
+    console.log('Color picker modal element:', modal);
     modal.classList.add('show');
     
     // Initialize with current color or default
@@ -495,6 +497,7 @@ export function showColorPickerModal(event) {
     
     // Check if rainbow is active
     const isRainbow = localStorage.getItem('titleRainbow') === 'true';
+    console.log('Is rainbow active:', isRainbow);
     if (isRainbow) {
         window.selectedColorOption = 'rainbow';
         document.getElementById('rainbow-btn').classList.add('active');

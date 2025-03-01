@@ -71,7 +71,8 @@ export function renderKeys(keys) {
                 draggable="true" 
                 ondragstart="handleDragStart(event, ${key.id})"
                 ondragend="handleDragEnd(event)"
-                oncontextmenu="showKeyContextMenu(event, '${key.encrypted ? '[ENCRYPTED]' : key.key.replace(/'/g, "\\'")}', ${key.id}, ${key.encrypted})">
+                oncontextmenu="showKeyContextMenu(event, '${key.encrypted ? '[ENCRYPTED]' : key.key.replace(/'/g, "\\'")}', ${key.id}, ${key.encrypted})"
+                ondblclick="${key.encrypted ? `showPasswordPrompt('copy', ${key.id})` : `copyToClipboard('${key.key.replace(/'/g, "\\'")}')`}">
             <div class="flex justify-between items-start mb-4">
                 <div>
                     <h3 class="font-semibold">${key.name}</h3>
@@ -99,13 +100,13 @@ export function renderKeys(keys) {
     `).join('');
     
     // Add drag and drop event listeners to the container
-    container.ondragover = handleDragOver;
-    container.ondrop = handleDrop;
+    container.ondragover = window.handleDragOver;
+    container.ondrop = window.handleDrop;
     
     // Add drag and drop event listeners to all project items
     document.querySelectorAll('.project-item').forEach(item => {
-        item.ondragover = handleDragOver;
-        item.ondrop = event => handleKeyDrop(event, item.dataset.projectId);
+        item.ondragover = window.handleDragOver;
+        item.ondrop = event => window.handleKeyDrop(event, item.dataset.projectId);
     });
     
     // Store the keys array for reference in drag operations
@@ -369,4 +370,7 @@ export function refreshKeyCard(key) {
     keyCard.ondragstart = (event) => window.handleDragStart(event, key.id);
     keyCard.ondragend = window.handleDragEnd;
     keyCard.oncontextmenu = (event) => window.showKeyContextMenu(event, key.encrypted ? '[ENCRYPTED]' : key.key, key.id, key.encrypted);
+    keyCard.ondblclick = key.encrypted ? 
+        () => window.showPasswordPrompt('copy', key.id) : 
+        () => copyToClipboard(key.key);
 }

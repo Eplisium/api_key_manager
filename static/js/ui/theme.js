@@ -1,3 +1,5 @@
+import { showColorPickerModal } from './modals.js';
+
 // Add a debounce flag to prevent rapid toggles
 let isThemeToggling = false;
 
@@ -136,8 +138,20 @@ export function initializeSidebar() {
  * @param {Event} event - The click event
  */
 export function toggleRainbow(event) {
-    // Only proceed if the shift key is pressed
-    if (!event.shiftKey) return;
+    console.log('toggleRainbow called with event type:', event.type, 'shift key:', event.shiftKey);
+    
+    // For left-click, only proceed if the shift key is pressed
+    if (event.type === 'contextmenu') {
+        // This should not be called for contextmenu events anymore
+        // We're handling contextmenu separately in initializeRainbowEffects
+        return;
+    }
+    
+    // For left-click, only proceed if the shift key is pressed
+    if (!event.shiftKey) {
+        console.log('Shift key not pressed, returning');
+        return;
+    }
     
     const title = document.querySelector('.title');
     const titleApi = document.querySelector('.title-api');

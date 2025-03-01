@@ -2,6 +2,7 @@ import { selectedProject, setSelectedProject, isProjectEditMode, setIsProjectEdi
 import { showNotification } from '../ui/notifications.js';
 import { hideProjectModal, hideDeleteProjectModal } from '../ui/modals.js';
 import { fetchKeys } from '../keys/keyManager.js';
+import { handleProjectDragStart, handleProjectDragOver, handleProjectDragEnd, handleProjectDrop } from './projectDragDrop.js';
 
 /**
  * Fetch all projects from the server
