@@ -81,7 +81,19 @@
 
     <div class="main-content" id="main-content">
         <header class="header">
-            <h1 class="title"><span class="title-api">API</span> <span class="title-key key-text" onclick="toggleRainbow(event)">Key</span> <span class="title-manager">Manager</span></h1>
+            <h1 class="title">
+                <span class="title-api">API</span> 
+                <span class="title-key-wrapper" oncontextmenu="return false;">
+                    <div class="key-overlay" 
+                         oncontextmenu="return false;" 
+                         onmousedown="handleKeyMouseDown(event)"
+                         onclick="if(event.button === 2) { return false; }"></div>
+                    <span class="title-key rainbow" 
+                          data-text="Key" 
+                          oncontextmenu="return false;">Key</span>
+                </span>
+                <span class="title-manager">Manager</span>
+            </h1>
             <div id="selected-project-display" class="selected-project-badge">
                 <span class="badge-label">Project:</span>
                 <span class="project-name" id="selected-project-name">All Projects</span>

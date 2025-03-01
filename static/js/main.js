@@ -194,6 +194,33 @@ document.addEventListener('DOMContentLoaded', async () => {
     window.selectedWord = 'all';
     window.selectedColorOption = 'solid';
     
+    // Handle mouse events on the key overlay element
+    window.handleKeyMouseDown = function(event) {
+        console.log('Key mouse down event:', event.button, event.shiftKey);
+        
+        // Always prevent default event behavior to avoid context menu
+        event.preventDefault();
+        event.stopPropagation();
+        
+        // Handle shift+right-click (open color picker)
+        if (event.shiftKey && event.button === 2) {
+            console.log('Shift+right-click detected on key, opening color picker');
+            setTimeout(() => {
+                showColorPickerModal(event);
+            }, 10);
+            return false;
+        }
+        
+        // Handle shift+left-click (toggle rainbow effect)
+        if (event.shiftKey && event.button === 0) {
+            console.log('Shift+left-click detected on key, toggling rainbow');
+            toggleRainbow(event);
+            return false;
+        }
+        
+        return false;
+    };
+    
     // Add event listeners for dropdowns
     window.onclick = function(event) {
         if (!event.target.matches('.btn-secondary')) {
@@ -211,7 +238,26 @@ document.addEventListener('DOMContentLoaded', async () => {
     document.addEventListener('contextmenu', function(event) {
         console.log('Global contextmenu handler triggered');
         
-        // Check if shift key is pressed
+        // Check if the click is on or within the title-key element
+        const titleKeyElement = document.querySelector('.title-key');
+        if (titleKeyElement && (event.target === titleKeyElement || titleKeyElement.contains(event.target))) {
+            console.log('Right-click on title-key element detected');
+            
+            // Always prevent default for right-clicks on title-key
+            event.preventDefault();
+            event.stopPropagation();
+            
+            // Only show color picker if shift key is pressed
+            if (event.shiftKey) {
+                console.log('Shift key is pressed during right-click');
+                setTimeout(() => {
+                    showColorPickerModal(event);
+                }, 10);
+            }
+            return false;
+        }
+        
+        // Check if shift key is pressed for other elements
         if (event.shiftKey) {
             console.log('Shift key is pressed during right-click');
             
@@ -231,6 +277,43 @@ document.addEventListener('DOMContentLoaded', async () => {
     
     // Simplify with a direct handler using mousedown for better detection
     const titleElement = document.querySelector('.title');
+    const titleKeyElement = document.querySelector('.title-key');
+    
+    // Add specific event listener for the title-key element
+    if (titleKeyElement) {
+        // Prevent context menu on title-key regardless of shift key
+        titleKeyElement.addEventListener('contextmenu', function(event) {
+            console.log('Direct contextmenu handler on title-key triggered');
+            event.preventDefault();
+            event.stopPropagation();
+            
+            // Only show color picker if shift key is pressed
+            if (event.shiftKey) {
+                setTimeout(() => {
+                    showColorPickerModal(event);
+                }, 10);
+            }
+            return false;
+        }, false);
+        
+        titleKeyElement.addEventListener('mousedown', function(event) {
+            // Right mouse button (button 2)
+            if (event.button === 2) {
+                console.log('mousedown: Right button detected on title-key');
+                event.preventDefault();
+                event.stopPropagation();
+                
+                // Show the color picker if shift key is pressed
+                if (event.shiftKey) {
+                    setTimeout(() => {
+                        showColorPickerModal(event);
+                    }, 10);
+                }
+                return false;
+            }
+        }, true);
+    }
+    
     if (titleElement) {
         titleElement.addEventListener('mousedown', function(event) {
             // Check if it's a right-click (button 2) with shift key pressed
@@ -314,6 +397,59 @@ document.addEventListener('DOMContentLoaded', async () => {
     });
     
     observer.observe(document.body, { childList: true, subtree: true });
+    
+    // Add a final global window-level handler for context menu events
+    window.addEventListener('contextmenu', function(event) {
+        // Check for key-overlay element first
+        if (event.target && (event.target.classList.contains('key-overlay') ||
+            event.target.closest('.key-overlay'))) {
+            console.log('Prevented context menu on key-overlay');
+            event.preventDefault();
+            event.stopPropagation();
+            return false;
+        }
+        
+        // Get the target element and check if it's the title-key or a child of it
+        const titleKeyElement = document.querySelector('.title-key');
+        if (titleKeyElement && (event.target === titleKeyElement || titleKeyElement.contains(event.target))) {
+            console.log('Window-level contextmenu handler prevented default for title-key');
+            event.preventDefault();
+            event.stopPropagation();
+            return false;
+        }
+    }, true);
+    
+    // Add a specific handler to prevent context menu on the overlay
+    document.addEventListener('DOMContentLoaded', function() {
+        const keyOverlay = document.querySelector('.key-overlay');
+        if (keyOverlay) {
+            keyOverlay.addEventListener('contextmenu', function(event) {
+                console.log('Prevented context menu on key-overlay element');
+                event.preventDefault();
+                event.stopPropagation();
+                return false;
+            }, true);
+            
+            // Add handlers for all relevant mouse events
+            ['mousedown', 'mouseup', 'click', 'auxclick', 'pointerdown'].forEach(eventType => {
+                keyOverlay.addEventListener(eventType, function(event) {
+                    if (event.button === 2 || (event.shiftKey && event.button === 2)) {
+                        console.log(`Prevented ${eventType} event with button ${event.button} on key-overlay`);
+                        event.preventDefault();
+                        event.stopPropagation();
+                        
+                        // Trigger color picker on shift+right-click
+                        if (event.shiftKey && event.button === 2 && eventType === 'mousedown') {
+                            colorPickerModal.style.display = 'block';
+                            colorPickerTarget = 'rainbow';
+                        }
+                        
+                        return false;
+                    }
+                }, true);
+            });
+        }
+    });
     
     // Set up color input event listeners
     const setupColorInputEventListeners = () => {

@@ -220,6 +220,68 @@ export function toggleRainbow(event) {
  * Initialize rainbow effects and colors from localStorage
  */
 export function initializeRainbowEffects() {
+    // Check if title already has rainbow element
+    if (!document.querySelector('.title-key-wrapper')) {
+        // Get the title element
+        const title = document.querySelector('.title');
+        if (!title) return;
+
+        // Find the text "Key" in the title
+        const titleText = title.textContent;
+        const keyIndex = titleText.indexOf('Key');
+        
+        if (keyIndex !== -1) {
+            // Split the text into parts
+            const beforeKey = titleText.substring(0, keyIndex);
+            const afterKey = titleText.substring(keyIndex + 3);
+            
+            // Clear the title
+            title.innerHTML = '';
+            
+            // Add the parts back with the 'Key' part highlighted
+            if (beforeKey) {
+                const apiSpan = document.createElement('span');
+                apiSpan.className = 'title-api';
+                apiSpan.textContent = 'API';
+                title.appendChild(apiSpan);
+                title.appendChild(document.createTextNode(' '));
+            }
+            
+            // Create the key wrapper
+            const keyWrapper = document.createElement('span');
+            keyWrapper.className = 'title-key-wrapper';
+            keyWrapper.setAttribute('oncontextmenu', 'return false;');
+            
+            // Create overlay for the key
+            const keyOverlay = document.createElement('div');
+            keyOverlay.className = 'key-overlay';
+            keyOverlay.setAttribute('oncontextmenu', 'return false;');
+            keyOverlay.setAttribute('onmousedown', 'handleKeyMouseDown(event)');
+            keyOverlay.setAttribute('onclick', 'if(event.button === 2) { return false; }');
+            
+            // Create the key span
+            const keySpan = document.createElement('span');
+            keySpan.className = 'title-key';
+            keySpan.setAttribute('data-text', 'Key');
+            keySpan.setAttribute('oncontextmenu', 'return false;');
+            keySpan.textContent = 'Key';
+            
+            // Assemble the structure
+            keyWrapper.appendChild(keyOverlay);
+            keyWrapper.appendChild(keySpan);
+            title.appendChild(keyWrapper);
+            
+            if (afterKey) {
+                title.appendChild(document.createTextNode(' '));
+                const managerSpan = document.createElement('span');
+                managerSpan.className = 'title-manager';
+                managerSpan.textContent = 'Manager';
+                title.appendChild(managerSpan);
+            }
+        }
+    }
+    
+    // Apply rainbow effects
     const title = document.querySelector('.title');
     const titleApi = document.querySelector('.title-api');
     const titleKey = document.querySelector('.title-key');
@@ -237,46 +299,40 @@ export function initializeRainbowEffects() {
         // Apply rainbow to entire title
         title.classList.add('rainbow');
         // Clear individual rainbow effects
-        titleApi.classList.remove('rainbow');
-        titleKey.classList.remove('rainbow');
-        titleManager.classList.remove('rainbow');
+        if (titleApi) titleApi.classList.remove('rainbow');
+        if (titleKey) titleKey.classList.remove('rainbow');
+        if (titleManager) titleManager.classList.remove('rainbow');
     } else {
         // Apply individual rainbow effects
-        if (apiRainbow) titleApi.classList.add('rainbow');
-        if (keyRainbow) titleKey.classList.add('rainbow');
-        if (managerRainbow) titleManager.classList.add('rainbow');
+        if (titleApi && apiRainbow) titleApi.classList.add('rainbow');
+        if (titleKey && keyRainbow) titleKey.classList.add('rainbow');
+        if (titleManager && managerRainbow) titleManager.classList.add('rainbow');
         
         // Apply individual colors if not rainbow
-        if (!apiRainbow) {
+        if (titleApi && !apiRainbow) {
             const apiColor = localStorage.getItem('titleColor_api');
             if (apiColor) titleApi.style.color = apiColor;
         }
         
-        if (!keyRainbow) {
+        if (titleKey && !keyRainbow) {
             const keyColor = localStorage.getItem('titleColor_key');
             if (keyColor) titleKey.style.color = keyColor;
         }
         
-        if (!managerRainbow) {
+        if (titleManager && !managerRainbow) {
             const managerColor = localStorage.getItem('titleColor_manager');
             if (managerColor) titleManager.style.color = managerColor;
         }
     }
     
     // Apply project badge effects
-    if (projectRainbow) {
-        projectBadge.classList.add('rainbow');
-    } else {
-        const projectColor = localStorage.getItem('projectColor');
-        if (projectColor) projectBadge.style.color = projectColor;
-    }
-    
-    // Ensure the title has the expected structure for rainbow animation
-    if (title && !title.innerHTML.includes('title-api')) {
-        title.innerHTML = 
-            '<span class="title-api">API</span> ' +
-            '<span class="title-key key-text" onclick="toggleRainbow(event)">Key</span> ' +
-            '<span class="title-manager">Manager</span>';
+    if (projectBadge) {
+        if (projectRainbow) {
+            projectBadge.classList.add('rainbow');
+        } else {
+            const projectColor = localStorage.getItem('projectColor');
+            if (projectColor) projectBadge.style.color = projectColor;
+        }
     }
 }
 

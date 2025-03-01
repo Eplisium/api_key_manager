@@ -33,6 +33,34 @@
   z-index: 1;
 }
 
+/* Key wrapper and overlay */
+.title-key-wrapper {
+  position: relative;
+  display: inline-block;
+}
+
+.key-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 1000;
+  cursor: pointer;
+  user-select: none;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  touch-action: none;
+  pointer-events: all !important; /* Force pointer events */
+  background-color: transparent;
+}
+
+/* Ensure key-overlay captures all events */
+.key-overlay * {
+  pointer-events: none !important;
+}
+
 /* Enhanced rainbow effect for entire title */
 .title.rainbow {
   position: relative;
@@ -125,8 +153,15 @@
   user-select: none;
   -webkit-user-select: none;
   -moz-user-select: none;
+  -ms-user-select: none;
   cursor: pointer;
   position: relative;
+  /* Prevent context menu */
+  -webkit-touch-callout: none;
+  -webkit-context-menu: none;
+  -moz-context-menu: none;
+  -ms-context-menu: none;
+  context-menu: none;
 }
 
 .title-key:hover {
