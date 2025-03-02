@@ -207,6 +207,15 @@ document.addEventListener('DOMContentLoaded', async () => {
             return;
         }
         
+        // Remove visual debugging elements if they exist
+        const shiftOverlay = document.getElementById('shift-overlay');
+        if (shiftOverlay) shiftOverlay.remove();
+        
+        const debugStyle = document.getElementById('debug-style');
+        if (debugStyle) debugStyle.remove();
+        
+        document.body.classList.remove('shift-active');
+        
         // Remove any existing inline handlers
         titleKeyWrapper.removeAttribute('oncontextmenu');
         titleKeyElement.removeAttribute('oncontextmenu');
@@ -221,47 +230,69 @@ document.addEventListener('DOMContentLoaded', async () => {
         tooltip.style.display = 'none';
         titleKeyWrapper.appendChild(tooltip);
         
-        // Apply CSS to prevent context menu
-        [titleKeyElement, keyOverlay, titleKeyWrapper, title].forEach(el => {
+        // Remove any existing event listeners (if possible)
+        const titleElements = [titleKeyElement, keyOverlay, titleKeyWrapper, title];
+        
+        // Clear any existing event listeners
+        titleElements.forEach(el => {
             if (el) {
-                el.style.webkitUserSelect = 'none';
-                el.style.userSelect = 'none';
-                el.style.webkitTouchCallout = 'none';
+                const newEl = el.cloneNode(true);
+                if (el.parentNode) {
+                    el.parentNode.replaceChild(newEl, el);
+                }
             }
         });
         
-        // Super aggressive context menu prevention
-        const preventContextMenu = (e) => {
-            // Check if the event target is any of our protected elements or their children
-            const isProtectedElement = e.target === titleKeyElement || 
-                                     e.target === keyOverlay ||
-                                     e.target === titleKeyWrapper ||
-                                     e.target === title ||
-                                     titleKeyElement?.contains(e.target) ||
-                                     keyOverlay?.contains(e.target) ||
-                                     titleKeyWrapper?.contains(e.target) ||
-                                     title?.contains(e.target);
-            
-            if (isProtectedElement) {
-                e.preventDefault();
-                e.stopPropagation();
-                e.stopImmediatePropagation();
-                
-                // Show color picker on shift+right-click
-                if (e.shiftKey && (e.button === 2 || e.type === 'contextmenu')) {
+        // Re-get elements after cloning
+        const newTitleKeyElement = document.querySelector('.title-key');
+        const newKeyOverlay = document.querySelector('.key-overlay');
+        const newTitleKeyWrapper = document.querySelector('.title-key-wrapper');
+        const newTitle = document.querySelector('.title');
+        
+        // Create a single handler for all mouse events
+        const handleMouseEvent = (e) => {
+            // For right-click events (contextmenu or mousedown with button 2)
+            if (e.type === 'contextmenu' || (e.type === 'mousedown' && e.button === 2)) {
+                if (e.shiftKey) {
+                    // Shift+Right-Click: Show color picker
+                    console.log('Shift+Right click detected on', e.target.className);
+                    e.preventDefault();
+                    e.stopPropagation();
+                    e.stopImmediatePropagation();
+                    
+                    // Show color picker after a small delay
                     setTimeout(() => {
                         showColorPickerModal(e);
-                    }, 0);
+                    }, 10);
+                    
+                    return false;
+                } else {
+                    // Regular right-click: Allow default context menu
+                    console.log('Regular right click detected on', e.target.className);
+                    return true;
                 }
+            }
+            
+            // For left-click with shift
+            if (e.type === 'mousedown' && e.button === 0 && e.shiftKey) {
+                console.log('Shift+Left click detected, toggling rainbow');
+                e.preventDefault();
+                e.stopPropagation();
                 
-                // Toggle rainbow on shift+left-click
-                if (e.shiftKey && e.button === 0 && e.type === 'mousedown') {
-                    toggleRainbow(e);
-                }
-                
+                toggleRainbow(e);
                 return false;
             }
+            
+            return true;
         };
+        
+        // Apply the event handler to each element with capture phase
+        [newTitleKeyElement, newKeyOverlay, newTitleKeyWrapper, newTitle].forEach(el => {
+            if (el) {
+                el.addEventListener('contextmenu', handleMouseEvent, true);
+                el.addEventListener('mousedown', handleMouseEvent, true);
+            }
+        });
         
         // Handle hover events for tooltip
         const handleHover = (event) => {
@@ -269,35 +300,11 @@ document.addEventListener('DOMContentLoaded', async () => {
             tooltip.style.display = isHovering ? 'block' : 'none';
         };
         
-        // Add event listeners directly to the elements
-        [titleKeyElement, keyOverlay, titleKeyWrapper, title].forEach(el => {
-            if (el) {
-                ['contextmenu', 'mousedown', 'mouseup', 'click'].forEach(eventType => {
-                    el.addEventListener(eventType, preventContextMenu, true);
-                });
-            }
-        });
-        
-        // Add global document listeners as a fallback
-        ['contextmenu', 'mousedown', 'mouseup', 'click'].forEach(eventType => {
-            document.addEventListener(eventType, preventContextMenu, true);
-        });
-        
         // Add hover events for tooltip
-        titleKeyElement.addEventListener('mouseenter', handleHover);
-        titleKeyElement.addEventListener('mouseleave', handleHover);
-        keyOverlay.addEventListener('mouseenter', handleHover);
-        keyOverlay.addEventListener('mouseleave', handleHover);
-        
-        // Add a direct event listener to the window object
-        window.addEventListener('contextmenu', preventContextMenu, true);
-        
-        // Override the oncontextmenu property of the document
-        document.oncontextmenu = (e) => {
-            if (preventContextMenu(e) === false) {
-                return false;
-            }
-        };
+        newTitleKeyElement.addEventListener('mouseenter', handleHover);
+        newTitleKeyElement.addEventListener('mouseleave', handleHover);
+        newKeyOverlay.addEventListener('mouseenter', handleHover);
+        newKeyOverlay.addEventListener('mouseleave', handleHover);
     };
     
     // Call the setup function
@@ -465,6 +472,42 @@ document.addEventListener('DOMContentLoaded', async () => {
     
     // Add event listener for theme toggle button
     document.getElementById('theme-toggle')?.addEventListener('click', toggleTheme);
+    
+    // Add a single, robust global context menu handler
+    document.addEventListener('contextmenu', function(e) {
+        // Check if the target is a title key element
+        const isTitleKeyElement = e.target.closest('.title-key-wrapper') || 
+                                 e.target.closest('.title-key') || 
+                                 e.target.closest('.key-overlay') ||
+                                 e.target.closest('.title');
+        
+        // Debug mode - log all context menu events
+        console.log('Context menu event:', {
+            target: e.target.className,
+            shiftKey: e.shiftKey,
+            isTitleKeyElement: !!isTitleKeyElement,
+            button: e.button,
+            type: e.type,
+            timestamp: new Date().toISOString()
+        });
+        
+        if (isTitleKeyElement && e.shiftKey) {
+            console.log('Global handler: Preventing context menu for Shift+Right-Click on title key');
+            e.preventDefault();
+            e.stopPropagation();
+            e.stopImmediatePropagation();
+            
+            // Show the color picker modal
+            setTimeout(() => {
+                showColorPickerModal(e);
+            }, 10);
+            
+            return false;
+        }
+        
+        // Allow default context menu for all other cases
+        return true;
+    }, true); // Use capture phase to ensure this runs before other handlers
     
     console.log('Initialization complete');
 });

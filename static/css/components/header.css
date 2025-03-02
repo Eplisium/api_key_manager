@@ -150,23 +150,31 @@
 }
 
 .title-key {
-  user-select: none;
+  cursor: pointer;
+  position: relative;
+  -webkit-touch-callout: none !important;
+}
+
+/* Apply context menu prevention to all title elements */
+.title-key-wrapper,
+.title-key,
+.key-overlay,
+.title {
+  /* These properties help prevent context menu in some browsers */
+  -webkit-touch-callout: none;
   -webkit-user-select: none;
   -moz-user-select: none;
   -ms-user-select: none;
-  cursor: pointer;
-  position: relative;
-  /* Prevent context menu */
-  -webkit-touch-callout: none;
-  -webkit-context-menu: none;
-  -moz-context-menu: none;
-  -ms-context-menu: none;
-  context-menu: none;
+  user-select: none;
 }
 
 .title-key:hover {
   text-shadow: 0 0 8px rgba(var(--primary-rgb), 0.4);
   transition: all 0.2s ease;
+}
+
+[data-theme="dark"] .title-key:hover {
+  text-shadow: 0 0 12px rgba(var(--primary-rgb), 0.6);
 }
 
 /* Custom tooltip for title key */
@@ -203,25 +211,6 @@
 
 [data-theme="dark"] .title-key-tooltip {
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
-}
-
-/* Ensure the title key has proper styling */
-.title-key {
-  user-select: none !important;
-  -webkit-user-select: none !important;
-  -moz-user-select: none !important;
-  -ms-user-select: none !important;
-  cursor: pointer;
-  position: relative;
-  -webkit-touch-callout: none !important;
-  -webkit-context-menu: none !important;
-  -moz-context-menu: none !important;
-  -ms-context-menu: none !important;
-  context-menu: none !important;
-}
-
-[data-theme="dark"] .title-key:hover {
-  text-shadow: 0 0 12px rgba(var(--primary-rgb), 0.6);
 }
 
 /* Selected Project Badge */

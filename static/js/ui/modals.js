@@ -479,9 +479,28 @@ export function hideClearKeysModal() {
 export function showColorPickerModal(event) {
     console.log('showColorPickerModal called', event);
     if (event) {
+        // Ensure we prevent the default context menu
         event.preventDefault();
         event.stopPropagation();
         event.stopImmediatePropagation();
+        
+        // For context menu events, add an extra layer of prevention
+        if (event.type === 'contextmenu' || (event.button === 2 && event.type === 'mousedown')) {
+            console.log('Preventing context menu in showColorPickerModal');
+            
+            // Create a one-time event listener that will capture and prevent any context menu
+            const preventContextMenu = (e) => {
+                console.log('One-time context menu prevention fired');
+                e.preventDefault();
+                e.stopPropagation();
+                e.stopImmediatePropagation();
+                document.removeEventListener('contextmenu', preventContextMenu, true);
+                return false;
+            };
+            
+            // Add the listener with capture to ensure it runs first
+            document.addEventListener('contextmenu', preventContextMenu, true);
+        }
     }
     
     // Add a small delay to ensure the context menu is fully prevented
