@@ -249,21 +249,22 @@ document.addEventListener('DOMContentLoaded', async () => {
         const newTitleKeyWrapper = document.querySelector('.title-key-wrapper');
         const newTitle = document.querySelector('.title');
         
-        // Create a single handler for all mouse events
+        // Create a single handler for all mouse events - FIXED VERSION
         const handleMouseEvent = (e) => {
             // For right-click events (contextmenu or mousedown with button 2)
             if (e.type === 'contextmenu' || (e.type === 'mousedown' && e.button === 2)) {
                 if (e.shiftKey) {
                     // Shift+Right-Click: Show color picker
-                    console.log('Shift+Right click detected on', e.target.className);
+                    console.log('Shift+Right click detected on element:', e.target.className);
+                    
+                    // IMPORTANT: First call showColorPickerModal directly, then prevent default
+                    // This ensures the color picker shows up before events are cancelled
+                    showColorPickerModal(e);
+                    
+                    // After showing the color picker, prevent the default context menu
                     e.preventDefault();
                     e.stopPropagation();
                     e.stopImmediatePropagation();
-                    
-                    // Show color picker after a small delay
-                    setTimeout(() => {
-                        showColorPickerModal(e);
-                    }, 10);
                     
                     return false;
                 } else {
@@ -473,41 +474,141 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Add event listener for theme toggle button
     document.getElementById('theme-toggle')?.addEventListener('click', toggleTheme);
     
-    // Add a single, robust global context menu handler
-    document.addEventListener('contextmenu', function(e) {
-        // Check if the target is a title key element
-        const isTitleKeyElement = e.target.closest('.title-key-wrapper') || 
-                                 e.target.closest('.title-key') || 
-                                 e.target.closest('.key-overlay') ||
-                                 e.target.closest('.title');
+    // Detect Firefox browser
+    const isFirefox = typeof InstallTrigger !== 'undefined';
+    console.log("Browser detection:", isFirefox ? "Firefox detected" : "Not Firefox");
+    
+    // Apply Firefox-specific context menu overrides
+    if (isFirefox) {
+        console.log("Applying Firefox-specific context menu overrides");
         
-        // Debug mode - log all context menu events
+        // Directly modify the title key HTML
+        const titleKeyWrapper = document.querySelector('.title-key-wrapper');
+        if (titleKeyWrapper) {
+            titleKeyWrapper.style.mozUserSelect = 'none';
+            titleKeyWrapper.style.mozContextMenu = 'none';
+            titleKeyWrapper.setAttribute('contextmenu', 'none');
+        }
+        
+        // Get all relevant title elements
+        const titleElements = document.querySelectorAll('.title-key-wrapper, .title-key, .key-overlay, .title');
+        
+        // Add multiple layers of context menu prevention for Firefox
+        titleElements.forEach(el => {
+            // 1. Direct attribute
+            el.setAttribute('oncontextmenu', `
+                if(event.shiftKey) {
+                    event.preventDefault(); 
+                    event.stopPropagation(); 
+                    showColorPickerModal(event); 
+                    return false;
+                }
+                return true;
+            `);
+            
+            // 2. Standard event listener with high priority
+            el.addEventListener('contextmenu', function(e) {
+                if (e.shiftKey) {
+                    console.log('Firefox specific handler activated');
+                    showColorPickerModal(e);
+                    e.preventDefault();
+                    e.stopPropagation();
+                    e.stopImmediatePropagation();
+                    return false;
+                }
+            }, {capture: true, passive: false});
+            
+            // 3. Event listener for mousedown to catch right-clicks early
+            el.addEventListener('mousedown', function(e) {
+                if (e.button === 2 && e.shiftKey) {
+                    console.log('Firefox mousedown handler activated');
+                    showColorPickerModal(e);
+                    e.preventDefault();
+                    e.stopPropagation();
+                    e.stopImmediatePropagation();
+                    return false;
+                }
+            }, {capture: true, passive: false});
+        });
+        
+        // 4. Add a global handler that runs after a small delay
+        setTimeout(() => {
+            document.addEventListener('contextmenu', function(e) {
+                // Check if the target is a title element
+                const isTitleElement = e.target.closest('.title-key-wrapper, .title-key, .key-overlay, .title');
+                if (isTitleElement && e.shiftKey) {
+                    console.log('Delayed Firefox handler activated');
+                    showColorPickerModal(e);
+                    e.preventDefault();
+                    e.stopPropagation();
+                    e.stopImmediatePropagation();
+                    return false;
+                }
+            }, {capture: true, passive: false});
+        }, 100);
+    }
+    
+    // Enhanced global context menu handler with Firefox-specific fixes
+    document.addEventListener('contextmenu', function(e) {
+        // More comprehensive title element detection using CSS selector
+        const isTitleElement = e.target.closest('.title-key-wrapper, .title-key, .key-overlay, .title') !== null;
+        
+        // Debug mode - log all context menu events with more details and browser info
         console.log('Context menu event:', {
+            browser: isFirefox ? 'Firefox' : 'Other',
             target: e.target.className,
+            targetTagName: e.target.tagName,
+            targetId: e.target.id,
+            parentClassName: e.target.parentElement?.className,
             shiftKey: e.shiftKey,
-            isTitleKeyElement: !!isTitleKeyElement,
+            isTitleElement: !!isTitleElement,
             button: e.button,
             type: e.type,
             timestamp: new Date().toISOString()
         });
         
-        if (isTitleKeyElement && e.shiftKey) {
-            console.log('Global handler: Preventing context menu for Shift+Right-Click on title key');
-            e.preventDefault();
-            e.stopPropagation();
-            e.stopImmediatePropagation();
+        if (isTitleElement && e.shiftKey) {
+            console.log('Enhanced handler: Blocking context menu for Shift+Right-Click on', e.target.className);
+
+            // First show the color picker modal
+            showColorPickerModal(e);
             
-            // Show the color picker modal
-            setTimeout(() => {
-                showColorPickerModal(e);
-            }, 10);
+            // Force prevention of the default context menu
+            window.setTimeout(function() {
+                // Using setTimeout to ensure this runs after the browser tries to show the context menu
+                e.preventDefault();
+                e.stopPropagation();
+                e.stopImmediatePropagation();
+            }, 0);
             
             return false;
         }
         
         // Allow default context menu for all other cases
         return true;
-    }, true); // Use capture phase to ensure this runs before other handlers
+    }, {capture: true, passive: false}); // For Firefox, we need passive: false
+    
+    // Add a dedicated mousedown handler as backup for context menu prevention - FIXED VERSION
+    document.addEventListener('mousedown', function(e) {
+        // Only handle right clicks (button 2)
+        if (e.button !== 2) return true;
+        
+        // Use the same comprehensive selector for title elements
+        const isTitleElement = e.target.closest('.title-key-wrapper, .title-key, .key-overlay, .title') !== null;
+        
+        if (isTitleElement && e.shiftKey) {
+            console.log('Mousedown handler: Blocking context menu for Shift+Right-Click on', e.target.className);
+            
+            // First call showColorPickerModal directly and then prevent default
+            showColorPickerModal(e);
+            
+            // After showing the color picker, prevent the default behavior
+            e.preventDefault();
+            e.stopPropagation();
+            e.stopImmediatePropagation();
+            return false;
+        }
+    }, {capture: true}); // Use capture phase but avoid passive: false
     
     console.log('Initialization complete');
 });

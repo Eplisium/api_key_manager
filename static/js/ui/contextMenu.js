@@ -294,16 +294,5 @@ export async function viewEncryptedKey(keyId) {
     }
 }
 
-// Remove the conflicting global event listener
-// Add a global event listener to prevent context menu on title elements
-// Prevent the default context menu when Shift key is pressed, allow it for normal right-click
-// document.addEventListener('contextmenu', (e) => {
-//     if ((e.target.closest('.title-key-wrapper') || 
-//         e.target.closest('.title-key') || 
-//         e.target.closest('.key-overlay')) &&
-//         e.shiftKey) {
-//         e.preventDefault();
-//         e.stopPropagation();
-//         return false;
-//     }
-// }, true);
+// Context menu prevention for title elements is now handled in main.js
+// with a more comprehensive approach using both contextmenu and mousedown events
