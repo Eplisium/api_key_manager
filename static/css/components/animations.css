@@ -82,6 +82,20 @@
   color: inherit;
 }
 
+/* Theme transition */
+:root {
+  transition: none;
+}
+
+/* Apply transitions only when theme-transition class is present */
+.theme-transition,
+.theme-transition *,
+.theme-transition *:before,
+.theme-transition *:after {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+  transition-property: background-color, color, border-color, box-shadow, text-shadow !important;
+}
+
 /* Smooth color transition */
 .color-transition {
   transition: color 0.3s cubic-bezier(0.4, 0, 0.2, 1),
@@ -94,6 +108,11 @@
   transition: background-color 0.3s cubic-bezier(0.4, 0, 0.2, 1),
               text-shadow 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   transition-property: background-color, text-shadow;
+}
+
+/* Prevent transitions during page load */
+.preload * {
+  transition: none !important;
 }
 
 /* Color change notification */

@@ -40,27 +40,49 @@ export function toggleTheme() {
 export function setTheme(theme) {
     console.log('Setting theme to:', theme);
     
-    // Set the theme attribute
-    document.documentElement.setAttribute('data-theme', theme);
+    // Validate theme
+    if (theme !== 'light' && theme !== 'dark') {
+        console.error('Invalid theme:', theme);
+        theme = 'light'; // Default to light if invalid
+    }
     
-    // Add a transition class to the body to make the change more visible
+    // Save to localStorage first to ensure persistence
+    localStorage.setItem('theme', theme);
+    
+    // Add transition class before making changes
     document.body.classList.add('theme-transition');
     
-    // Save to localStorage
-    localStorage.setItem('theme', theme);
+    // Set the theme attribute
+    document.documentElement.setAttribute('data-theme', theme);
     
     // Update the theme toggle icons
     const darkIcon = document.getElementById('theme-toggle-dark-icon');
     const lightIcon = document.getElementById('theme-toggle-light-icon');
     
-    if (theme === 'dark') {
-        console.log('Showing light icon (for dark theme)');
-        darkIcon.classList.add('hidden');
-        lightIcon.classList.remove('hidden');
-    } else {
-        console.log('Showing dark icon (for light theme)');
-        lightIcon.classList.add('hidden');
+    if (darkIcon && lightIcon) {
+        // Reset both icons first
         darkIcon.classList.remove('hidden');
+        lightIcon.classList.remove('hidden');
+        
+        if (theme === 'dark') {
+            console.log('Showing light icon (for dark theme)');
+            darkIcon.classList.add('hidden');
+        } else {
+            console.log('Showing dark icon (for light theme)');
+            lightIcon.classList.add('hidden');
+        }
+    } else {
+        console.error('Theme toggle icons not found');
+    }
+    
+    // Verify theme was set correctly
+    const currentTheme = document.documentElement.getAttribute('data-theme');
+    if (currentTheme !== theme) {
+        console.error('Theme not set correctly. Expected:', theme, 'Got:', currentTheme);
+        // Try setting again after a short delay
+        setTimeout(() => {
+            document.documentElement.setAttribute('data-theme', theme);
+        }, 0);
     }
     
     // Remove the transition class after the transition is complete
@@ -73,8 +95,16 @@ export function setTheme(theme) {
  * Initialize theme from localStorage or default to light
  */
 export function initializeTheme() {
+    // Get saved theme or default to light
     const savedTheme = localStorage.getItem('theme') || 'light';
     console.log('Initializing theme from localStorage:', savedTheme);
+    
+    // Ensure theme attribute is set (backup in case early initialization failed)
+    const currentTheme = document.documentElement.getAttribute('data-theme');
+    if (currentTheme !== savedTheme) {
+        console.log('Theme mismatch, correcting from:', currentTheme, 'to:', savedTheme);
+        document.documentElement.setAttribute('data-theme', savedTheme);
+    }
     
     // Make sure the correct icon is visible initially
     const darkIcon = document.getElementById('theme-toggle-dark-icon');
@@ -85,17 +115,28 @@ export function initializeTheme() {
     } else {
         console.log('Theme icons found, setting initial visibility');
         
+        // Reset both icons first to ensure clean state
+        darkIcon.classList.remove('hidden');
+        lightIcon.classList.remove('hidden');
+        
+        // Then hide the appropriate icon
         if (savedTheme === 'dark') {
             darkIcon.classList.add('hidden');
-            lightIcon.classList.remove('hidden');
         } else {
             lightIcon.classList.add('hidden');
-            darkIcon.classList.remove('hidden');
         }
     }
     
-    // Set the theme
+    // Add transition class to prevent initial flash
+    document.body.classList.add('theme-transition');
+    
+    // Set the theme (this will also save to localStorage)
     setTheme(savedTheme);
+    
+    // Remove transition class after a short delay
+    setTimeout(() => {
+        document.body.classList.remove('theme-transition');
+    }, 300);
     
     // Verify the theme was set
     console.log('Theme after initialization:', document.documentElement.getAttribute('data-theme'));

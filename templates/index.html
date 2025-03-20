@@ -1,9 +1,27 @@
 <!DOCTYPE html>
-<html lang="en" data-theme="light">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>API Key Manager</title>
+    <script>
+        // Initialize theme immediately to prevent flash of incorrect theme
+        (function() {
+            // Add preload class to prevent transitions during initialization
+            document.documentElement.classList.add('preload');
+            
+            // Get and set the saved theme
+            const savedTheme = localStorage.getItem('theme') || 'light';
+            document.documentElement.setAttribute('data-theme', savedTheme);
+            
+            // Remove preload class after a short delay to allow transitions after load
+            window.addEventListener('load', () => {
+                setTimeout(() => {
+                    document.documentElement.classList.remove('preload');
+                }, 100);
+            });
+        })();
+    </script>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}">
 </head>
 <body>
