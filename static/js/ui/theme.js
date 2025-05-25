@@ -1,4 +1,5 @@
 import { showColorPickerModal } from './modals.js';
+import { updateUserPreference, getUserPreference } from '../userPreferences.js';
 
 // Add a debounce flag to prevent rapid toggles
 let isThemeToggling = false;
@@ -46,8 +47,8 @@ export function setTheme(theme) {
         theme = 'light'; // Default to light if invalid
     }
     
-    // Save to localStorage first to ensure persistence
-    localStorage.setItem('theme', theme);
+    // Save to preferences
+    updateUserPreference('theme', theme);
     
     // Add transition class before making changes
     document.body.classList.add('theme-transition');
@@ -92,12 +93,12 @@ export function setTheme(theme) {
 }
 
 /**
- * Initialize theme from localStorage or default to light
+ * Initialize theme from preferences or default to light
  */
 export function initializeTheme() {
     // Get saved theme or default to light
-    const savedTheme = localStorage.getItem('theme') || 'light';
-    console.log('Initializing theme from localStorage:', savedTheme);
+    const savedTheme = getUserPreference('theme', 'light');
+    console.log('Initializing theme from preferences:', savedTheme);
     
     // Ensure theme attribute is set (backup in case early initialization failed)
     const currentTheme = document.documentElement.getAttribute('data-theme');
@@ -130,7 +131,7 @@ export function initializeTheme() {
     // Add transition class to prevent initial flash
     document.body.classList.add('theme-transition');
     
-    // Set the theme (this will also save to localStorage)
+    // Set the theme (this will also save to preferences)
     setTheme(savedTheme);
     
     // Remove transition class after a short delay
@@ -155,14 +156,14 @@ export function toggleSidebar() {
     toggleButton.classList.toggle('rotated');
     
     // Save the state
-    localStorage.setItem('sidebarCollapsed', sidebar.classList.contains('collapsed'));
+    updateUserPreference('sidebarCollapsed', sidebar.classList.contains('collapsed'));
 }
 
 /**
- * Initialize sidebar state from localStorage
+ * Initialize sidebar state from preferences
  */
 export function initializeSidebar() {
-    const sidebarCollapsed = localStorage.getItem('sidebarCollapsed') === 'true';
+    const sidebarCollapsed = getUserPreference('sidebarCollapsed', false);
     if (sidebarCollapsed) {
         const sidebar = document.getElementById('sidebar');
         const mainContent = document.getElementById('main-content');

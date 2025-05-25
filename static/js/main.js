@@ -1,8 +1,9 @@
 // Import state management
 import { initializeState } from './state/state.js';
+import { initializeUserPreferences, getUserPreference } from './userPreferences.js';
 
 // Import UI components
-import { showNotification } from './ui/notifications.js';
+import { showNotification, testNotifications } from './ui/notifications.js';
 import { setTheme, toggleTheme, initializeTheme, initializeSidebar, toggleSidebar, toggleRainbow, initializeRainbowEffects } from './ui/theme.js';
 import { 
     showContextMenu, hideContextMenu, editProjectFromMenu, deleteProjectFromMenu,
@@ -58,7 +59,8 @@ import {
 document.addEventListener('DOMContentLoaded', async () => {
     console.log('Page loaded, initializing...');
     
-    // Initialize state
+    // Initialize preferences and state
+    initializeUserPreferences();
     initializeState();
     
     // Initialize theme and UI
@@ -69,12 +71,15 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Fetch initial data
     await fetchProjects();
     
-    // Restore selected project from localStorage
-    const savedProject = localStorage.getItem('selectedProject');
-    if (savedProject) {
+    // Restore selected project from preferences
+    const showAllView = getUserPreference('showAllView', true);
+    const savedProject = getUserPreference('selectedProject', null);
+    
+    if (savedProject && !showAllView) {
         selectProject(parseInt(savedProject));
     } else {
-        await fetchKeys();
+        // If no project selected or "Show All" view is active
+        showAllKeys();
     }
     
     // Expose functions to the global scope for inline event handlers
@@ -87,6 +92,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     window.toggleSidebar = toggleSidebar;
     window.toggleRainbow = toggleRainbow;
     window.showNotification = showNotification;
+    window.testNotifications = testNotifications;
     
     // Context menu functions
     window.showContextMenu = showContextMenu;

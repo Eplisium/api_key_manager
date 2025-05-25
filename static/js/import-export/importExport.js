@@ -3,6 +3,7 @@ import { showPostImportModal } from '../ui/modals.js';
 import { fetchKeys } from '../keys/keyManager.js';
 import { selectedProject } from '../state/state.js';
 import { performExport } from '../keys/encryption.js';
+import { getUserPreference, setShowAllViewState } from '../userPreferences.js';
 
 /**
  * Handle environment file upload
@@ -240,6 +241,7 @@ export async function saveImportedKeysConfig() {
 
     try {
         await Promise.all(updates);
+        showNotification(`Successfully saved configuration for ${updates.length} key${updates.length !== 1 ? 's' : ''}`, 'success');
         document.getElementById('post-import-modal').classList.remove('show');
         fetchKeys();
     } catch (error) {
@@ -289,7 +291,10 @@ export function confirmClearAllKeys() {
  */
 export async function executeClearAllKeys() {
     try {
+        // Determine if we're in "Show All" view
+        const isShowAllView = getUserPreference('showAllView', true);
         const url = selectedProject ? `/projects/${selectedProject}/keys` : '/keys';
+        
         const response = await fetch(url, {
             method: 'DELETE'
         });
@@ -305,6 +310,15 @@ export async function executeClearAllKeys() {
 
         showNotification(`Deleted ${result.count} keys from ${projectName}`, 'success');
 
+        // Ensure UI state is consistent with current view mode
+        if (isShowAllView) {
+            // If we were in "Show All" view, make sure we stay there
+            document.getElementById('selected-project-name').textContent = 'All Projects';
+            document.querySelectorAll('.project-item').forEach(item => item.classList.remove('active'));
+            document.getElementById('import-env-btn').style.display = 'none';
+            setShowAllViewState(true); // Ensure preference is set correctly
+        }
+        
         // Refresh the keys list
         fetchKeys();
     } catch (error) {

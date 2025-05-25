@@ -145,5 +145,8 @@ export function performExport(format, password = null) {
         queryParams.append('password', password);
     }
     
+    // Show notification that export is starting
+    showNotification(`Starting ${format.toUpperCase()} export...`, 'success');
+    
     window.location.href = `/export?${queryParams.toString()}`;
 }

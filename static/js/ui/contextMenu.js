@@ -284,6 +284,16 @@ export async function viewEncryptedKey(keyId) {
             })
         });
         
+        // Show success notification for viewing encrypted key
+        showNotification('Encrypted key decrypted successfully', 'success');
+        
+        // Update the copy button to work with the decrypted value
+        const copyButton = contextMenu.querySelector('.context-menu-item');
+        copyButton.onclick = () => {
+            hideKeyContextMenu();
+            copyToClipboard(keyData.key);
+        };
+        
     } catch (error) {
         console.error('Error viewing encrypted key:', error);
         showNotification(error.message, 'error');

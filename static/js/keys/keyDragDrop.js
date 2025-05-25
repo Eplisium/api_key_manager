@@ -283,6 +283,9 @@ export async function handleKeyReorder(keyId, newPosition, droppedCard) {
             throw new Error(error.error || 'Failed to reorder key');
         }
         
+        // Show success notification
+        showNotification('Key position updated successfully', 'success');
+        
         // Add success animation
         droppedCard.style.transition = 'all 0.3s ease-in-out';
         droppedCard.style.transform = 'scale(1.02)';

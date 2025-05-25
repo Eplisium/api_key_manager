@@ -1,4 +1,6 @@
 // Global state variables
+import { updateUserPreference, getUserPreference } from '../userPreferences.js';
+
 export let isEditMode = false;
 export let selectedProject = null;
 export let isProjectEditMode = false;
@@ -28,7 +30,8 @@ export function setIsEditMode(value) {
 
 export function setSelectedProject(value) {
     selectedProject = value;
-    localStorage.setItem('selectedProject', value);
+    updateUserPreference('selectedProject', value);
+    updateUserPreference('showAllView', value === null);
 }
 
 export function setIsProjectEditMode(value) {
@@ -75,9 +78,9 @@ export function setKeys(value) {
     keys = value;
 }
 
-// Initialize state from localStorage
+// Initialize state from preferences
 export function initializeState() {
-    const savedProject = localStorage.getItem('selectedProject');
+    const savedProject = getUserPreference('selectedProject', null);
     if (savedProject) {
         selectedProject = parseInt(savedProject);
     }

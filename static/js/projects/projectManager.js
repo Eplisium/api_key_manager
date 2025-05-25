@@ -3,6 +3,7 @@ import { showNotification } from '../ui/notifications.js';
 import { hideProjectModal, hideDeleteProjectModal } from '../ui/modals.js';
 import { fetchKeys } from '../keys/keyManager.js';
 import { handleProjectDragStart, handleProjectDragOver, handleProjectDragEnd, handleProjectDrop } from './projectDragDrop.js';
+import { updateUserPreference, setShowAllViewState } from '../userPreferences.js';
 
 /**
  * Fetch all projects from the server
@@ -102,7 +103,7 @@ export async function selectProject(projectId) {
  */
 export function showAllKeys() {
     setSelectedProject(null);
-    localStorage.removeItem('selectedProject');
+    setShowAllViewState(true);
     document.getElementById('selected-project-name').textContent = 'All Projects';
     document.querySelectorAll('.project-item').forEach(item => item.classList.remove('active'));
     // Add this line to hide the import button
